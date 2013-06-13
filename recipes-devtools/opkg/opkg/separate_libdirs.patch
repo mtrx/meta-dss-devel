@@ -1,0 +1,23 @@
+--- trunk/libopkg/pkg_dest.c	2010-09-10 01:39:08.000000000 +0200
++++ trunk/libopkg/pkg_dest.c	2010-09-10 01:39:38.000000000 +0200
+@@ -37,8 +37,18 @@
+     }
+     file_mkdir_hier(dest->root_dir, 0755);
+ 
+-    sprintf_alloc(&dest->opkg_dir, "%s%s",
+-		  dest->root_dir, OPKG_STATE_DIR_PREFIX);
++    /* -- patch start --*/
++    /* we want to have a complete separation between two opkg configurations,
++     * each of them should list and list_installed only the packages that are
++     * available in a particular configuration, we do not want to mix them*/
++    const char *lib_conf_dir = getenv("OPKG_LIB_DIR");
++        if (lib_conf_dir == NULL)
++            sprintf_alloc(&dest->opkg_dir, "%s%s",
++		         dest->root_dir, OPKG_STATE_DIR_PREFIX);
++        else
++            sprintf_alloc(&dest->opkg_dir, "%s", lib_conf_dir);
++    
++    /* -- patch end -- */
+     file_mkdir_hier(dest->opkg_dir, 0755);
+ 
+     if (lists_dir[0] == '/')

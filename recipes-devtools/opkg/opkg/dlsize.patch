@@ -1,0 +1,188 @@
+--- a/libopkg/opkg_cmd.c	(revision 633)
++++ b/libopkg/opkg_cmd.c	(working copy)
+@@ -720,6 +720,59 @@
+ }
+ 
+ static int
++opkg_show_upgrade_download_size_cmd(int argc, char **argv)
++{
++    struct active_list *head = prepare_upgrade_list();
++    struct active_list *node=NULL;
++    pkg_t *_old_pkg, *_new_pkg;
++    long long int dl_size = 0;
++    int ndepends;
++    char **tmp, **unresolved = NULL;
++    pkg_vec_t *depends;
++    int i;
++
++    for (node = active_list_next(head, head); node;node = active_list_next(head,node)) {
++        _old_pkg = list_entry(node, pkg_t, list);
++        _new_pkg = pkg_hash_fetch_best_installation_candidate_by_name(_old_pkg->name);
++        if (_new_pkg == NULL)
++            continue;
++        if (_new_pkg->state_flag & SF_COUNTED) {
++            continue;
++        }
++        _new_pkg->state_flag |= SF_COUNTED;
++
++        dl_size += _new_pkg->size;
++        depends = pkg_vec_alloc();
++        ndepends = pkg_hash_fetch_unsatisfied_dependencies(_new_pkg, depends,
++                            &unresolved);
++        if (unresolved) {
++            /* we don't care about unresolved deps, but we have to free them */
++            /* doing it same way as in satisfy_dependencies_for(pkg_t *pkg) */
++            tmp = unresolved;
++            while (*unresolved) {
++                free(*unresolved);
++                unresolved++;
++            }
++            free(tmp);
++        }
++        if (ndepends > 0) {
++            for (i = 0; i < depends->len; i++) {
++                if (!(depends->pkgs[i]->state_flag & SF_COUNTED)) {
++                    dl_size += depends->pkgs[i]->size;
++                    depends->pkgs[i]->state_flag |= SF_COUNTED;
++                }
++            }
++        }
++        pkg_vec_free(depends);
++    }
++
++    active_list_head_delete(head);
++    printf("Total size of upgrade download in bytes: %lld\n", dl_size);
++    return 0;
++}
++
++
++static int
+ opkg_info_status_cmd(int argc, char **argv, int installed_only)
+ {
+      int i;
+@@ -1271,6 +1324,7 @@
+      {"list-upgradable", 0, (opkg_cmd_fun_t)opkg_list_upgradable_cmd, PFM_SOURCE},
+      {"list_changed_conffiles", 0, (opkg_cmd_fun_t)opkg_list_changed_conffiles_cmd, PFM_SOURCE},
+      {"list-changed-conffiles", 0, (opkg_cmd_fun_t)opkg_list_changed_conffiles_cmd, PFM_SOURCE},
++     {"show-upgrade-download-size", 0, (opkg_cmd_fun_t)opkg_show_upgrade_download_size_cmd, PFM_SOURCE},
+      {"info", 0, (opkg_cmd_fun_t)opkg_info_cmd, 0},
+      {"flag", 1, (opkg_cmd_fun_t)opkg_flag_cmd, PFM_DESCRIPTION|PFM_SOURCE},
+      {"status", 0, (opkg_cmd_fun_t)opkg_status_cmd, PFM_DESCRIPTION|PFM_SOURCE},
+--- a/libopkg/opkg.c	(revision 633)
++++ b/libopkg/opkg.c	(working copy)
+@@ -739,11 +739,15 @@
+ }
+ 
+ int
+-opkg_list_upgradable_packages(opkg_package_callback_t callback, void *user_data)
++opkg_list_upgradable_packages(opkg_package_callback_t callback, int with_deps, void *user_data)
+ {
+ 	struct active_list *head;
+ 	struct active_list *node;
+ 	pkg_t *old = NULL, *new = NULL;
++    char **tmp, **unresolved = NULL;
++    pkg_vec_t *depends;
++    int ndepends;
++    int i;
+ 
+ 	opkg_assert(callback);
+ 
+@@ -757,7 +761,36 @@
+ 		new = pkg_hash_fetch_best_installation_candidate_by_name(old->name);
+ 		if (new == NULL)
+ 			continue;
++        if (new->state_flag & SF_COUNTED) {
++            continue;
++        }
++        new->state_flag |= SF_COUNTED;
+ 		callback(new, user_data);
++        if (with_deps) {
++            depends = pkg_vec_alloc();
++            ndepends = pkg_hash_fetch_unsatisfied_dependencies(new, depends,
++                                        &unresolved);
++            if (unresolved) {
++                /* we don't care about unresolved deps, but we have to free
++                   them doing it same way as in
++                   satisfy_dependencies_for(pkg_t *pkg) */
++                tmp = unresolved;
++                while (*unresolved) {
++                    free(*unresolved);
++                    unresolved++;
++                }
++                free(tmp);
++            }
++            if (ndepends > 0) {
++                for (i = 0; i < depends->len; i++) {
++                    if (!(depends->pkgs[i]->state_flag & SF_COUNTED)) {
++                        callback(depends->pkgs[i], user_data);
++                        depends->pkgs[i]->state_flag |= SF_COUNTED;
++                    }   
++                }
++            }
++            pkg_vec_free(depends);
++        }
+ 	}
+ 	active_list_head_delete(head);
+ 	return 0;
+--- a/libopkg/opkg.h	(revision 633)
++++ b/libopkg/opkg.h	(working copy)
+@@ -53,7 +53,7 @@
+ int opkg_update_package_lists (opkg_progress_callback_t callback, void *user_data);
+ 
+ int opkg_list_packages (opkg_package_callback_t callback, void *user_data);
+-int opkg_list_upgradable_packages (opkg_package_callback_t callback, void *user_data);
++int opkg_list_upgradable_packages (opkg_package_callback_t callback, int with_deps, void *user_data);
+ pkg_t* opkg_find_package (const char *name, const char *version, const char *architecture, const char *repository);
+ 
+ int opkg_repository_accessibility_check(void);
+--- a/libopkg/pkg.h	(revision 633)
++++ b/libopkg/pkg.h	(working copy)
+@@ -60,6 +60,7 @@
+     SF_MARKED    = 64, /* temporary mark */
+     SF_FILELIST_CHANGED = 128, /* needs filelist written */
+     SF_USER      = 256,
++    SF_COUNTED   = 512,
+     SF_LAST_STATE_FLAG
+ };
+ typedef enum pkg_state_flag pkg_state_flag_t;
+--- a/src/opkg-cl.c	(revision 633)
++++ b/src/opkg-cl.c	(working copy)
+@@ -233,6 +233,7 @@
+ 	printf("\tlist-installed		List installed packages\n");
+ 	printf("\tlist-upgradable		List installed and upgradable packages\n");
+ 	printf("\tlist-changed-conffiles	List user modified configuration files\n");
++    printf("\tshow-upgrade-download-size Show how much space will be needed to download all packages for the upgrade\n");
+ 	printf("\tfiles <pkg>		List files belonging to <pkg>\n");
+ 	printf("\tsearch <file|regexp>	List package providing <file>\n");
+ 	printf("\tinfo [pkg|regexp]	Display all info for <pkg>\n");
+--- a/tests/libopkg_test.c	(revision 633)
++++ b/tests/libopkg_test.c	(working copy)
+@@ -120,8 +120,11 @@
+   printf ("\nopkg_remove_package returned %d\n", err);
+ 
+   printf ("Listing upgradable packages...\n");
+-  opkg_list_upgradable_packages (package_list_upgradable_callback, NULL);
++  opkg_list_upgradable_packages (package_list_upgradable_callback, 0, NULL);
+ 
++  printf ("Listing upgradable packages with dependencies...\n");
++  opkg_list_upgradable_packages (package_list_upgradable_callback, 1, NULL);
++
+   err = opkg_upgrade_all (progress_callback, "Upgrading all...");
+   printf ("\nopkg_upgrade_all returned %d\n", err);
+ 
+@@ -220,8 +223,14 @@
+         {
+           case 'u':
+             printf ("Listing upgradable packages...\n");
+-            opkg_list_upgradable_packages (package_list_upgradable_callback, NULL);
++            opkg_list_upgradable_packages (package_list_upgradable_callback, 0,
++                                           NULL);
+             break;
++          case 'U':
++            printf ("Listing upgradable packages with dependencies...\n");
++            opkg_list_upgradable_packages (package_list_upgradable_callback, 1,
++                                           NULL);
++            break;
+           case 'a':
+             printf ("Listing all packages...\n");
+             opkg_list_packages (package_list_callback, NULL);

@@ -1,0 +1,6 @@
+#!/bin/sh
+if [[ -s /var/lib/udhcpc/eth0.lease ]]; then
+    . /var/lib/udhcpc/eth0.lease
+    echo "-r $IP"
+fi
+

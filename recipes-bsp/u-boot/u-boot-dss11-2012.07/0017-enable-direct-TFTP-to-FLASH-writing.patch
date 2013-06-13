@@ -1,0 +1,25 @@
+From 118433cf4e5043cbc2f2b42f75a3af9df3dc5b97 Mon Sep 17 00:00:00 2001
+From: Christian Hitz <christian.hitz@aizo.com>
+Date: Thu, 16 Aug 2012 08:42:46 +0200
+Subject: [PATCH 17/20] enable direct TFTP to FLASH writing
+
+This allows flashing of images that are bigger than the available RAM.
+---
+ include/configs/digitalSTROM.h |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/include/configs/digitalSTROM.h b/include/configs/digitalSTROM.h
+index e484b14..0ecf9de 100644
+--- a/include/configs/digitalSTROM.h
++++ b/include/configs/digitalSTROM.h
+@@ -114,6 +114,7 @@
+ #define CONFIG_CMD_MII		1
+ #define CONFIG_CMDLINE_EDITING	1
+ #define CONFIG_CMD_MTDPARTS	1
++#define CONFIG_SYS_DIRECT_FLASH_TFTP 1
+ #undef CONFIG_CMD_DATE
+ #undef CONFIG_CMD_FLASH
+ #undef CONFIG_CMD_FPGA
+-- 
+1.7.9.5
+

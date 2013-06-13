@@ -1,0 +1,123 @@
+#!/bin/sh
+
+LOGDIR=/var/log/dss
+RESTARTLOG="$LOGDIR/dss-start-stop.log"
+APRTLOG="$LOGDIR/apartment.log"
+STORAGE_DIR="/usr/share/dss/data/metering"
+ADDON_LOGS="$LOGDIR/js"
+FIRMWARE_DIRECTORY="/usr/share/dsm-firmware"
+DSM_ARM_VERSION=""
+DSM_DSP_VERSION=""
+
+mkdir -p $LOGDIR
+chmod a+rx $LOGDIR
+
+mkdir -p $STORAGE_DIR
+mkdir -p $ADDON_LOGS
+
+DSS11_LOCALE=
+DSS11_LANGUAGE=
+if [[ -f /etc/default/locale ]]; then
+    . /etc/default/locale
+else
+    DSS11_LOCALE="de_DE"
+    DSS11_LANGUAGE="Deutsch"
+fi
+OPT_LOCALE="--prop:/system/language/locale=$DSS11_LOCALE \
+            --prop:/system/language/language=$DSS11_LANGUAGE"
+
+if [ -d "$FIRMWARE_DIRECTORY" ]; then
+    if [ $(ls -1 "$FIRMWARE_DIRECTORY"/dsm-dsp*.img 2>/dev/null|wc -l) -eq 1 ] &&
+       [ $(ls -1 "$FIRMWARE_DIRECTORY"/dsm-arm*.img 2>/dev/null|wc -l) -eq 1 ]; then
+        ARMFW=`ls $FIRMWARE_DIRECTORY/dsm-arm*.img 2>/dev/null`
+        DSPFW=`ls $FIRMWARE_DIRECTORY/dsm-dsp*.img 2>/dev/null`
+        DSM_ARM_VERSION=`/usr/bin/getdsmfwversion.sh $ARMFW`
+        DSM_DSP_VERSION=`/usr/bin/getdsmfwversion.sh $DSPFW`
+    fi  
+fi
+
+OPT_DSM_FIRMWARE="--prop:/system/version/dSMFirmwareImageARM=$DSM_ARM_VERSION \
+                  --prop:/system/version/dSMFirmwareImageDSP=$DSM_DSP_VERSION"
+
+OPT_METERING="--prop:/config/subsystems/Metering/enabled=true"
+
+OPT_SSL='--prop:/config/subsystems/WebServer/sslcert=/etc/ssl/certs/dsscert.pem \
+   --prop:/config/subsystems/WebServices/sslcert=/etc/ssl/certs/dsscert.pem'
+
+# metering disabled without external storage medium
+if [ -e /var/lock/sdcard-failure ]; then
+   OPT_METERING='--prop:/config/subsystems/Metering/enabled=false'
+fi
+
+APP=/usr/bin/dss
+OPTIONS="--prop:/config/jslogdirectory=${ADDON_LOGS} \
+         --prop:/system/version/releasetype=development \
+         --prop:/config/spidermonkey/optionclear=18432 \
+         --prop:/config/spidermonkey/runtimesize=512000 \
+         --prop:/config/spidermonkey/stacksize=2048 \
+         --prop:/config/spidermonkey/cache=false \
+         --prop:/config/digestfile=/etc/lighttpd.user \
+         --prop:/config/subsystems/DS485Proxy/loglevel=2 \
+         --prop:/config/subsystems/BusInterfaceHandler/loglevel=2
+         --prop:/config/subsystems/DSSim/loglevel=2 \
+         --prop:/config/subsystems/WebServer/loglevel=2 \
+         --prop:/config/subsystems/WebServices/loglevel=2 \
+         --prop:/config/subsystems/Metering/loglevel=2 \
+         --prop:/config/subsystems/EventInterpreter/loglevel=2 \
+         --prop:/config/subsystems/Apartment/loglevel=2 \
+         --prop:/config/subsystems/WebServer/listen=127.0.0.1:8088h,0.0.0.0:8080\
+         --prop:/config/subsystems/WebServer/trustedPort=8088 \
+         --prop:/config/subsystems/WebServer/announcedport=443 \
+         --prop:/config/subsystems/Metering/storageLocation=${STORAGE_DIR} \
+         --prop:/config/subsystems/Metering/rrdDaemonAddress=unix:/var/run/rrdcached.sock \
+         $OPT_METERING \
+         $OPT_SSL \
+         $OPT_LOCALE \
+         $OPT_DSM_FIRMWARE \
+         -w /usr/share/dss-web/webroot \
+        "
+
+while [ ! -x $APP ]; do
+    echo "$0: $APP not found"
+    sleep 10;
+done
+
+# Temporary workaround for dSS processes that don't disappear when
+# running 'sv stop dss'. This should rather be fixed in the dss, but
+# for the time being, we have to be sure that there's no dSS process
+# runnning anymore, as otherwise the newly started process won't be
+# able to bind to the webserver port
+killall -9 dss
+sleep 1
+
+configtest ()
+{
+    if [[ -s /usr/share/dss/data/apartment.xml ]]; then
+        echo "[`date`] About to start dSS, apartment.xml exists:" >> $APRTLOG
+        ls -al /usr/share/dss/data/apartment.xml >> $APRTLOG
+    elif [[ -f /usr/share/dss/data/apartment.xml ]]; then
+        echo "[`date`] About to start dSS, 0-apartment.xml exists:" >> $APRTLOG
+        ls -al /usr/share/dss/data/apartment.xml >> $APRTLOG
+        ls -al /media/card/sys/dss/data/apartment.xml >> $APRTLOG
+        rm /usr/share/dss/data/apartment.xml
+    else
+        echo "[`date`] About to start dSS, apartment.xml not found" >> $APRTLOG
+        ls -al /usr/share/dss/data/apartment.xml >> $APRTLOG
+        ls -al /media/card/sys/dss/data/apartment.xml >> $APRTLOG
+    fi
+    echo "---------------------------------------------------------" >> $APRTLOG
+
+}
+
+configtest
+dss11-ledd-client ready
+
+echo "$(date) Starting dSS" >> $RESTARTLOG
+
+exec 2>&1
+$APP $OPTIONS
+
+RC=$?
+echo "$(date) Stopped dSS, RC=$RC" >> $RESTARTLOG
+
+dss11-ledd-client failure

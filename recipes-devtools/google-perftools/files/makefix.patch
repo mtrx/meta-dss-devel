@@ -1,0 +1,38 @@
+--- a/Makefile.am
++++ b/Makefile.am
+@@ -112,7 +112,7 @@
+ # files that just forward to the canonical location in
+ # perftoolsincludedir.
+ googleincludedir = $(includedir)/google
+-googleinclude_HEADERS =				\
++googleinclude_HEADERS_X =				\
+    src/google/heap-checker.h			\
+    src/google/heap-profiler.h			\
+    src/google/malloc_extension.h		\
+@@ -340,7 +340,7 @@
+                         src/base/vdso_support.h
+ 
+ SG_STACKTRACE_INCLUDES = src/gperftools/stacktrace.h
+-STACKTRACE_INCLUDES = $(S_STACKTRACE_INCLUDES) $(SG_STACKTRACE_INCLUDES)
++STACKTRACE_INCLUDES_X = $(S_STACKTRACE_INCLUDES) $(SG_STACKTRACE_INCLUDES)
+ perftoolsinclude_HEADERS += $(SG_STACKTRACE_INCLUDES)
+ 
+ ### Making the library
+@@ -429,7 +429,7 @@
+                               src/malloc_hook_mmap_linux.h \
+                               src/malloc_hook_mmap_freebsd.h \
+                               src/maybe_threads.h
+-SG_TCMALLOC_MINIMAL_INCLUDES = src/gperftools/malloc_hook.h \
++SG_TCMALLOC_MINIMAL_INCLUDES_X = src/gperftools/malloc_hook.h \
+                                src/gperftools/malloc_hook_c.h \
+                                src/gperftools/malloc_extension.h \
+                                src/gperftools/malloc_extension_c.h \
+@@ -1186,7 +1186,7 @@
+                           src/base/sysinfo.h \
+                           $(SPINLOCK_INCLUDES) \
+                           $(LOGGING_INCLUDES)
+-SG_CPU_PROFILER_INCLUDES = src/gperftools/profiler.h \
++SG_CPU_PROFILER_INCLUDES_X = src/gperftools/profiler.h \
+                            src/gperftools/stacktrace.h
+ CPU_PROFILER_INCLUDES = $(S_CPU_PROFILER_INCLUDES) $(SG_CPU_PROFILER_INCLUDES)
+ perftoolsinclude_HEADERS += $(SG_CPU_PROFILER_INCLUDES)

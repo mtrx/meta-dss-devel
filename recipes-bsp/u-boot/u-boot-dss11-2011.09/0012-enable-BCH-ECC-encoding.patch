@@ -1,0 +1,42 @@
+From 28eb23761287c3dd1227466ce75ed95ae6de8406 Mon Sep 17 00:00:00 2001
+From: Christian Hitz <christian.hitz@aizo.com>
+Date: Fri, 30 Sep 2011 08:57:59 +0200
+Subject: [PATCH 12/16] enable BCH ECC encoding
+
+---
+ drivers/mtd/nand/atmel_nand.c  |    5 ++++-
+ include/configs/digitalSTROM.h |    2 ++
+ 2 files changed, 6 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/mtd/nand/atmel_nand.c b/drivers/mtd/nand/atmel_nand.c
+index 818d362..107145f 100644
+--- a/drivers/mtd/nand/atmel_nand.c
++++ b/drivers/mtd/nand/atmel_nand.c
+@@ -274,7 +274,10 @@ int board_nand_init(struct nand_chip *nand)
+ 	struct mtd_info *mtd;
+ #endif
+ 
+-	nand->ecc.mode = NAND_ECC_SOFT;
++	nand->ecc.mode = NAND_ECC_SOFT_BCH;
++	nand->ecc.size = 512;
++	nand->ecc.bytes = 7;
++
+ #ifdef CONFIG_SYS_NAND_DBW_16
+ 	nand->options = NAND_BUSWIDTH_16;
+ #endif
+diff --git a/include/configs/digitalSTROM.h b/include/configs/digitalSTROM.h
+index bc4afe0..944d718 100644
+--- a/include/configs/digitalSTROM.h
++++ b/include/configs/digitalSTROM.h
+@@ -193,6 +193,8 @@
+ #define CONFIG_SYS_NAND_MASK_CLE	(1 << 22)
+ #define CONFIG_SYS_NAND_ENABLE_PIN	AT91_PIN_PC14
+ #define CONFIG_SYS_NAND_READY_PIN	AT91_PIN_PC13
++#define CONFIG_NAND_ECC_BCH
++#define CONFIG_BCH
+ #endif
+ 
+ #define CONFIG_JFFS2_CMDLINE	1
+-- 
+1.7.4.1
+

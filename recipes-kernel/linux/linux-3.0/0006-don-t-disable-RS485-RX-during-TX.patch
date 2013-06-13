@@ -1,0 +1,37 @@
+From 3da1a8d6c483daa7412eed608697fbcafb61350c Mon Sep 17 00:00:00 2001
+From: Johannes Winkelmann <johannes.winkelmann@aizo.com>
+Date: Wed, 27 Jul 2011 14:55:54 +0200
+Subject: [PATCH 06/17] don't disable RS485 RX during TX
+
+Also see https://lkml.org/lkml/2011/6/23/100
+---
+ drivers/tty/serial/atmel_serial.c |    6 ------
+ 1 files changed, 0 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/tty/serial/atmel_serial.c b/drivers/tty/serial/atmel_serial.c
+index af9b781..e3874ca 100644
+--- a/drivers/tty/serial/atmel_serial.c
++++ b/drivers/tty/serial/atmel_serial.c
+@@ -338,9 +338,6 @@ static void atmel_stop_tx(struct uart_port *port)
+ 	}
+ 	/* Disable interrupts */
+ 	UART_PUT_IDR(port, atmel_port->tx_done_mask);
+-
+-	if (atmel_port->rs485.flags & SER_RS485_ENABLED)
+-		atmel_start_rx(port);
+ }
+ 
+ /*
+@@ -356,9 +353,6 @@ static void atmel_start_tx(struct uart_port *port)
+ 			   really need this.*/
+ 			return;
+ 
+-		if (atmel_port->rs485.flags & SER_RS485_ENABLED)
+-			atmel_stop_rx(port);
+-
+ 		/* re-enable PDC transmit */
+ 		UART_PUT_PTCR(port, ATMEL_PDC_TXTEN);
+ 	}
+-- 
+1.7.4.1
+

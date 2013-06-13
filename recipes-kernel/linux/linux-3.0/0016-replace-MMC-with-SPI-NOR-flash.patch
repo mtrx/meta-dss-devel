@@ -1,0 +1,128 @@
+From 61cadb161deea9ed01096d5d49fb488b224a9d1e Mon Sep 17 00:00:00 2001
+From: Christian Hitz <christian.hitz@aizo.com>
+Date: Tue, 4 Oct 2011 15:07:54 +0200
+Subject: [PATCH 16/17] replace MMC with SPI NOR flash
+
+---
+ arch/arm/configs/dss11_defconfig     |   36 ++++-----------------------------
+ arch/arm/mach-at91/board-sam9g20ek.c |   16 +++++++++-----
+ 2 files changed, 15 insertions(+), 37 deletions(-)
+
+diff --git a/arch/arm/configs/dss11_defconfig b/arch/arm/configs/dss11_defconfig
+index 553d8bb..acba3f6 100644
+--- a/arch/arm/configs/dss11_defconfig
++++ b/arch/arm/configs/dss11_defconfig
+@@ -1,6 +1,6 @@
+ #
+ # Automatically generated make config: don't edit
+-# Linux/arm 3.0.4 Kernel Configuration
++# Linux/arm 3.0.0 Kernel Configuration
+ #
+ CONFIG_ARM=y
+ CONFIG_SYS_SUPPORTS_APM_EMULATION=y
+@@ -621,10 +621,9 @@ CONFIG_MTD_CFI_I2=y
+ #
+ # Self-contained MTD device drivers
+ #
+-CONFIG_MTD_DATAFLASH=y
+-# CONFIG_MTD_DATAFLASH_WRITE_VERIFY is not set
+-# CONFIG_MTD_DATAFLASH_OTP is not set
+-# CONFIG_MTD_M25P80 is not set
++# CONFIG_MTD_DATAFLASH is not set
++CONFIG_MTD_M25P80=y
++CONFIG_M25PXX_USE_FAST_READ=y
+ # CONFIG_MTD_SST25L is not set
+ # CONFIG_MTD_SLRAM is not set
+ # CONFIG_MTD_PHRAM is not set
+@@ -711,7 +710,6 @@ CONFIG_ATMEL_SSC=y
+ # CONFIG_EEPROM_LEGACY is not set
+ # CONFIG_EEPROM_MAX6875 is not set
+ # CONFIG_EEPROM_93CX6 is not set
+-# CONFIG_IWMC3200TOP is not set
+ 
+ #
+ # Texas Instruments shared transport line discipline
+@@ -833,7 +831,6 @@ CONFIG_CARL9170_WPC=y
+ # CONFIG_B43 is not set
+ # CONFIG_B43LEGACY is not set
+ # CONFIG_HOSTAP is not set
+-# CONFIG_IWM is not set
+ # CONFIG_LIBERTAS is not set
+ # CONFIG_P54_COMMON is not set
+ CONFIG_RT2X00=m
+@@ -1354,30 +1351,7 @@ CONFIG_USB_LIBUSUAL=y
+ # CONFIG_USB_GPIO_VBUS is not set
+ # CONFIG_USB_ULPI is not set
+ # CONFIG_NOP_USB_XCEIV is not set
+-CONFIG_MMC=y
+-# CONFIG_MMC_DEBUG is not set
+-# CONFIG_MMC_UNSAFE_RESUME is not set
+-# CONFIG_MMC_CLKGATE is not set
+-
+-#
+-# MMC/SD/SDIO Card Drivers
+-#
+-CONFIG_MMC_BLOCK=y
+-CONFIG_MMC_BLOCK_MINORS=8
+-CONFIG_MMC_BLOCK_BOUNCE=y
+-# CONFIG_SDIO_UART is not set
+-# CONFIG_MMC_TEST is not set
+-
+-#
+-# MMC/SD/SDIO Host Controller Drivers
+-#
+-# CONFIG_MMC_SDHCI is not set
+-CONFIG_MMC_AT91=y
+-# CONFIG_MMC_ATMELMCI is not set
+-# CONFIG_MMC_SPI is not set
+-# CONFIG_MMC_DW is not set
+-# CONFIG_MMC_VUB300 is not set
+-# CONFIG_MMC_USHC is not set
++# CONFIG_MMC is not set
+ # CONFIG_MEMSTICK is not set
+ CONFIG_NEW_LEDS=y
+ CONFIG_LEDS_CLASS=y
+diff --git a/arch/arm/mach-at91/board-sam9g20ek.c b/arch/arm/mach-at91/board-sam9g20ek.c
+index ed9de52..4ea9b5f 100644
+--- a/arch/arm/mach-at91/board-sam9g20ek.c
++++ b/arch/arm/mach-at91/board-sam9g20ek.c
+@@ -108,12 +108,12 @@ static struct at91_udc_data __initdata ek_udc_data = {
+  */
+ static struct spi_board_info ek_spi_devices[] = {
+ #if !(defined(CONFIG_MMC_ATMELMCI) || defined(CONFIG_MMC_AT91))
+-	{	/* DataFlash chip */
+-		.modalias	= "mtd_dataflash",
+-		.chip_select	= 1,
+-		.max_speed_hz	= 15 * 1000 * 1000,
+-		.bus_num	= 0,
+-	},
++    {   /* SerialFlash chip */
++        .modalias   = "m25p80",
++        .chip_select    = 1,
++        .max_speed_hz   = 1 * 1000 * 1000,
++        .bus_num    = 0,
++    },
+ #if defined(CONFIG_MTD_AT91_DATAFLASH_CARD)
+ 	{	/* DataFlash card */
+ 		.modalias	= "mtd_dataflash",
+@@ -216,6 +216,7 @@ static void __init ek_add_device_nand(void)
+  * MCI (SD/MMC)
+  * wp_pin and vcc_pin are not connected
+  */
++#if defined(CONFIG_MMC)
+ #if defined(CONFIG_MMC_ATMELMCI) || defined(CONFIG_MMC_ATMELMCI_MODULE)
+ static struct mci_platform_data __initdata ek_mmc_data = {
+ 	.slot[1] = {
+@@ -243,6 +244,9 @@ static void __init ek_add_device_mmc(void)
+ 	at91_add_device_mmc(0, &ek_mmc_data);
+ #endif
+ }
++#else
++static void __init ek_add_device_mmc(void) {}
++#endif
+ 
+ /*
+  * LEDs
+-- 
+1.7.4.1
+

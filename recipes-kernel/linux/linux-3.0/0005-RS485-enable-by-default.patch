@@ -1,0 +1,26 @@
+From 3510fbfb087cd7ee755ac0b40e0bfcabac798d39 Mon Sep 17 00:00:00 2001
+From: Johannes Winkelmann <johannes.winkelmann@aizo.com>
+Date: Tue, 26 Jul 2011 16:33:46 +0200
+Subject: [PATCH 05/17] RS485: enable by default
+
+---
+ arch/arm/mach-at91/at91sam9260_devices.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/mach-at91/at91sam9260_devices.c b/arch/arm/mach-at91/at91sam9260_devices.c
+index d815a2c..a02c53c 100644
+--- a/arch/arm/mach-at91/at91sam9260_devices.c
++++ b/arch/arm/mach-at91/at91sam9260_devices.c
+@@ -937,6 +937,9 @@ static struct resource uart1_resources[] = {
+ static struct atmel_uart_data uart1_data = {
+ 	.use_dma_tx	= 1,
+ 	.use_dma_rx	= 1,
++	.rs485 = {
++		.flags = SER_RS485_ENABLED,
++	},
+ };
+ 
+ static u64 uart1_dmamask = DMA_BIT_MASK(32);
+-- 
+1.7.4.1
+

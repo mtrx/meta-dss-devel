@@ -1,0 +1,8 @@
+/var/log/mail.log {
+    monthly
+    rotate 2
+    size 512k
+    missingok
+    notifempty
+}
+

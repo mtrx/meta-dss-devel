@@ -1,0 +1,15 @@
+#!/bin/sh
+
+mkdir -p /var/run/lighttpd
+mkdir -p /var/log/lighttpd
+CFG=/etc/lighttpd.conf
+
+# effectively disable logging without external storage medium
+if [ -e /var/lock/sdcard-failure ]; then
+   sed -e '/server.errorlog/d' -e '/accesslog.filename/d' $CFG > /tmp/lighttpd.conf
+   CFG=/tmp/lighttpd.conf
+fi
+
+exec 2>&1
+exec /usr/sbin/lighttpd -D -f $CFG
+

@@ -1,0 +1,12 @@
+rootfs               /                    auto       defaults              1  1
+proc                 /proc                proc       defaults              0  0
+devpts               /dev/pts             devpts     mode=0620,gid=5       0  0
+usbfs                /proc/bus/usb        usbfs      defaults              0  0
+tmpfs                /var/volatile        tmpfs      defaults              0  0
+tmpfs                /dev/shm             tmpfs      mode=0777             0  0
+tmpfs                /media/ram           tmpfs      defaults              0  0
+
+/dev/mmcblk0p1       /media/card                   auto  defaults,async,noatime,noauto  0  0
+aufs                 /var/log                      aufs  nodev,noatime,br:/media/card/sys/log=rw:/var/log=ro    0    0
+aufs                 /usr/share/dss/data/metering  aufs  nodev,noatime,br:/media/card/sys/metering=rw:/usr/share/dss/data/metering=ro    0    0
+

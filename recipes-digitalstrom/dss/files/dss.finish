@@ -1,0 +1,16 @@
+#!/bin/sh
+
+LOGDIR=/var/log/dss
+RESTARTLOG="$LOGDIR/dss-start-stop.log"
+
+killall dss
+
+echo "$(date) Stopped dSS" >> $RESTARTLOG
+
+sleep 4
+
+if [[ -n "`pidof dss`" ]]; then
+    echo "$(date) Force stopped dSS" >> $RESTARTLOG
+    killall -9 dss
+    sleep 1
+fi

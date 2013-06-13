@@ -1,0 +1,46 @@
+#!/bin/sh
+
+# This script runs at boot time and checks various system configurations.
+
+check_ssl_certificates() {
+    echo -n "Checking SSL availability of certificates... "
+    if [[ ! -f "/etc/ssl/certs/dsscert.pem" ]]; then
+        echo
+        mkdir -p /etc/ssl/certs/
+        if [[ $? -ne 0 ]]; then
+            echo "Could not create certificate storage directory!"
+            echo "Webserver and dSS will be unsuable!"
+            return 1
+        fi
+
+        if [[ ! -x "/usr/bin/create-cert" ]]; then
+            echo "failed"
+            echo "Certificate generation tool \"create-cert\" is not installed."
+            echo "Please install the \"create-certificate\" package!"
+            echo -n "No certificates generated, "
+            echo "Webserver and dSS will be unsuable!"
+            return 1 
+        fi
+
+        create-cert /etc/ssl/certs
+        if [[ $? -ne 0 ]]; then
+            echo -n "Certificate generation failed. "
+            echo "Webserver and dSS will be unsuable!"
+            return 1
+        fi
+    else
+        echo "ok"
+    fi
+
+    return 0;
+}
+
+case "$1" in
+    start)
+        check_ssl_certificates
+    ;;
+    *)
+    exit 0
+esac
+
+exit 0

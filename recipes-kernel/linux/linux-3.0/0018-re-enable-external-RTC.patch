@@ -1,0 +1,40 @@
+From 00daaa086d4987e366427dad3423300fb8d91a51 Mon Sep 17 00:00:00 2001
+From: Christian Hitz <christian.hitz@aizo.com>
+Date: Fri, 14 Oct 2011 11:05:33 +0200
+Subject: [PATCH 18/18] re-enable external RTC
+
+also remove unavailable audio codec
+---
+ arch/arm/mach-at91/board-sam9g20ek.c |    9 +--------
+ 1 files changed, 1 insertions(+), 8 deletions(-)
+
+diff --git a/arch/arm/mach-at91/board-sam9g20ek.c b/arch/arm/mach-at91/board-sam9g20ek.c
+index 4ea9b5f..abb80e9 100644
+--- a/arch/arm/mach-at91/board-sam9g20ek.c
++++ b/arch/arm/mach-at91/board-sam9g20ek.c
+@@ -370,10 +370,7 @@ static void __init ek_add_regulators(void) {}
+ 
+ static struct i2c_board_info __initdata ek_i2c_devices[] = {
+         {
+-                I2C_BOARD_INFO("24c512", 0x50)
+-        },
+-        {
+-                I2C_BOARD_INFO("wm8731", 0x1b)
++                I2C_BOARD_INFO("rs5c372a", 0x32)
+         },
+ };
+ 
+@@ -402,10 +399,6 @@ static void __init ek_board_init(void)
+ 	ek_add_device_gpio_leds();
+ 	/* Push Buttons */
+ 	ek_add_device_buttons();
+-	/* PCK0 provides MCLK to the WM8731 */
+-	at91_set_B_periph(AT91_PIN_PC1, 0);
+-	/* SSC (for WM8731) */
+-	at91_add_device_ssc(AT91SAM9260_ID_SSC, ATMEL_SSC_TX);
+ }
+ 
+ MACHINE_START(AT91SAM9G20EK, "Atmel AT91SAM9G20-EK")
+-- 
+1.7.5.4
+

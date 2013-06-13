@@ -1,0 +1,71 @@
+From f8ec3a8869aefc6f46f67978c3dff794ef0394c8 Mon Sep 17 00:00:00 2001
+From: Johannes Winkelmann <johannes.winkelmann@aizo.com>
+Date: Thu, 17 Jun 2010 16:35:31 +0200
+Subject: [PATCH 02/16] update partitions to support rescue system
+
+---
+ include/configs/digitalSTROM.h |   31 +++++++++++++++++++++++--------
+ 1 files changed, 23 insertions(+), 8 deletions(-)
+
+diff --git a/include/configs/digitalSTROM.h b/include/configs/digitalSTROM.h
+index 21b7765..b0f8ffe 100644
+--- a/include/configs/digitalSTROM.h
++++ b/include/configs/digitalSTROM.h
+@@ -203,8 +203,11 @@
+ 					"128k(bootstrap),"			\
+ 					"256k(uboot),"			\
+ 					"256k(uboot-env),"			\
+-					"2M(kernel),"			\
+-					"-(targetfs)"
++					"2M(kernel-rescue),"			\
++					"2M(kernel-prod),"			\
++					"32M(rootfs-rescue),"			\
++					"200M(rootfs-prod),"			\
++					"-(config)"
+ 
+ /* NOR flash - no real flash on this board */
+ #define CONFIG_SYS_NO_FLASH			1
+@@ -271,12 +274,16 @@
+ #define CONFIG_ENV_OFFSET_REDUND	0x80000
+ #define CONFIG_ENV_SIZE		0x20000		/* 1 sector = 128 kB */
+ //#define CONFIG_BOOTCOMMAND	"nand read 0x22000000 0xA0000 0x200000; bootm"
+-#define CONFIG_BOOTCOMMAND	"nboot 0x22000000 0 0xA0000;bootm 0x22000000"
++#define CONFIG_BOOTCOMMAND	"nboot 0x22000000 0 0x2A0000;bootm 0x22000000"
+ #define CONFIG_BOOTARGS		"console=ttyS0,115200 "			\
+-				"root=/dev/mtdblock4 "			\
++				"root=/dev/mtdblock6 "			\
+ 				"mtdparts=atmel_nand:128k(bootstrap)ro,"	\
+ 				"256k(uboot)ro,256k(uboot-env)ro,"		\
+-				"2M(linux),-(root) "	\
++				"2M(kernel-rescue),"		\
++				"2M(kernel-prod),"		\
++				"32M(rootfs-rescue),"		\
++				"200M(rootfs-prod),"		\
++				"-(config) "			\
+ 				"rw rootfstype=jffs2"
+ #define CONFIG_EXTRA_ENV_SETTINGS \
+ 				"update.bootstrap=echo Update Bootstrap;mw.l 0x20000000 0xffffffff 0x8000;tftpboot 0x20000000 aizo.nand;nand erase 0x0 0x20000;nand write 0x20000000 0x0 0x20000\0" \
+@@ -284,9 +291,17 @@
+ 				"update.kernel=echo Update linux;mw.l 0x20000000 0xffffffff 0x58000;tftpboot 0x20000000 aizo.kernel;nand erase 0xa0000 0x200000;nand write.jffs2 0x20000000 0xa0000 0x200000\0" \
+ 				"update.targetfs=echo Update targetfs;tftpboot 0x20000000 aizo.targetfs;nand erase 0x2a0000;nand write.jffs2 0x20000000 0x2a0000 $(filesize)\0" \
+ 				"mtdids=nand0=atmel_nand\0" \
+-				"mtdparts=mtdparts=atmel_nand:128k(bootstrap),256k(uboot),256k(uboot-env),2M(kernel),-(targetfs)\0" \
+-				"partition=nand0,4\0" \
+-				"mtddevnum=4\0" \
++                                "mtdparts=mtdparts=atmel_nand:"                  \
++					"128k(bootstrap),"			\
++					"256k(uboot),"			\
++					"256k(uboot-env),"			\
++					"2M(kernel-rescue),"			\
++					"2M(kernel-prod),"			\
++					"32M(rootfs-rescue),"			\
++					"200M(rootfs-prod),"			\
++					"-(config)\0" \
++				"partition=nand0,6\0" \
++				"mtddevnum=6\0" \
+ 				"mtddevname=targetfs\0" \
+ 				"ipaddr=192.168.1.61\0" \
+ 				"serverip=192.168.1.60\0" \
+-- 
+1.7.4.1
+

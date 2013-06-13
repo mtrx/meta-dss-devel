@@ -1,0 +1,73 @@
+From 6df608a6e188457571ce3f703798543fb1c9d931 Mon Sep 17 00:00:00 2001
+From: Christian Hitz <christian.hitz@aizo.com>
+Date: Thu, 8 Dec 2011 09:24:59 +0100
+Subject: [PATCH 1/2] opkg_message: add methods to collect the error causes
+
+---
+ libopkg/opkg_message.c |   14 ++++++++++++++
+ libopkg/opkg_message.h |   16 ++++++++++++++++
+ 2 files changed, 30 insertions(+), 0 deletions(-)
+
+diff --git a/libopkg/opkg_message.c b/libopkg/opkg_message.c
+index 7114e3a..a19a5e0 100644
+--- a/libopkg/opkg_message.c
++++ b/libopkg/opkg_message.c
+@@ -119,3 +119,17 @@ opkg_message (message_level_t level, const char *fmt, ...)
+ 
+ 	va_end (ap);
+ }
++
++static uint32_t error_causes = 0;
++
++void
++opkg_error_cause(uint32_t error)
++{
++    error_causes |= error;
++}
++
++uint32_t
++opkg_get_error_causes(void)
++{
++    return error_causes;
++}
+diff --git a/libopkg/opkg_message.h b/libopkg/opkg_message.h
+index 4fa2a0b..0638a3f 100644
+--- a/libopkg/opkg_message.h
++++ b/libopkg/opkg_message.h
+@@ -19,6 +19,7 @@
+ 
+ #include <string.h>
+ #include <errno.h>
++#include <stdint.h>
+ 
+ typedef enum {
+ 	ERROR,	/* error conditions */
+@@ -28,10 +29,25 @@ typedef enum {
+ 	DEBUG2,	/* more debug level message */
+ } message_level_t;
+ 
++#define ERROR_UNSPECIFIED                (1UL << 0)
++#define ERROR_DOWNLOAD_FAILED            (1UL << 1)
++#define ERROR_DEPENDENCY_FAILED          (1UL << 2)
++#define ERROR_PACKAGE_ALREADY_INSTALLED  (1UL << 3)
++#define ERROR_PACKAGE_NOT_AVAILABLE      (1UL << 4)
++#define ERROR_PACKAGE_NOT_FOUND          (1UL << 5)
++#define ERROR_PACKAGE_NOT_INSTALLED      (1UL << 6)
++#define ERROR_GPG_ERROR                  (1UL << 7)
++#define ERROR_MD5_ERROR                  (1UL << 8)
++#define ERROR_SHA256_ERROR               (1UL << 9)
++#define ERROR_POSTINSTALL_SCRIPT         (1UL << 10)
++#define ERROR_PRERM_SCRIPT               (1UL << 11)
++
+ void free_error_list(void);
+ void print_error_list(void);
+ void opkg_message(message_level_t level, const char *fmt, ...)
+ 				__attribute__ ((format (printf, 2, 3)));
++void opkg_error_cause(uint32_t error);
++uint32_t opkg_get_error_causes(void);
+ 
+ #define opkg_msg(l, fmt, args...) \
+ 	do { \
+-- 
+1.7.5.4
+

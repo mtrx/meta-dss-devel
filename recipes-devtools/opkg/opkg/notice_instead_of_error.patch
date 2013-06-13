@@ -1,0 +1,37 @@
+--- trunk/libopkg/opkg_conf.c	(revision 633)
++++ trunk/libopkg/opkg_conf.c	(working copy)
+@@ -138,7 +138,7 @@
+ 	       switch (options[i].type) {
+ 	       case OPKG_OPT_TYPE_BOOL:
+ 		    if (*(int *)options[i].value) {
+-			    opkg_msg(ERROR, "Duplicate boolean option %s, "
++			    opkg_msg(NOTICE, "Duplicate boolean option %s, "
+ 				"leaving this option on.\n", name);
+ 			    return 0;
+ 		    }
+@@ -147,7 +147,7 @@
+ 	       case OPKG_OPT_TYPE_INT:
+ 		    if (value) {
+ 			    if (*(int *)options[i].value) {
+-				    opkg_msg(ERROR, "Duplicate option %s, "
++				    opkg_msg(NOTICE, "Duplicate option %s, "
+ 					"using first seen value \"%d\".\n",
+ 					name, *((int *)options[i].value));
+ 				    return 0;
+@@ -155,14 +155,14 @@
+ 			 *((int * const)options[i].value) = atoi(value);
+ 			 return 0;
+ 		    } else {
+-			 opkg_msg(ERROR, "Option %s needs an argument\n",
++			 opkg_msg(NOTICE, "Option %s needs an argument\n",
+ 				name);
+ 			 return -1;
+ 		    }
+ 	       case OPKG_OPT_TYPE_STRING:
+ 		    if (value) {
+ 			    if (*(char **)options[i].value) {
+-				    opkg_msg(ERROR, "Duplicate option %s, "
++				    opkg_msg(NOTICE, "Duplicate option %s, "
+ 					"using first seen value \"%s\".\n",
+ 					name, *((char **)options[i].value));
+ 				    return 0;

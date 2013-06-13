@@ -1,0 +1,41 @@
+From 5a88ce7ce74ea88ec488760002e53c0b18c9cc27 Mon Sep 17 00:00:00 2001
+From: Johannes Winkelmann <johannes.winkelmann@aizo.com>
+Date: Tue, 26 Jul 2011 16:26:48 +0200
+Subject: [PATCH 01/17] basic support for dss11 boot
+
+---
+ arch/arm/mach-at91/at91sam9260_devices.c |    4 ++++
+ arch/arm/mach-at91/board-sam9g20ek.c     |    2 +-
+ 2 files changed, 5 insertions(+), 1 deletions(-)
+
+diff --git a/arch/arm/mach-at91/at91sam9260_devices.c b/arch/arm/mach-at91/at91sam9260_devices.c
+index 39f81f4..d815a2c 100644
+--- a/arch/arm/mach-at91/at91sam9260_devices.c
++++ b/arch/arm/mach-at91/at91sam9260_devices.c
+@@ -183,6 +183,10 @@ void __init at91_add_device_eth(struct at91_eth_data *data)
+ 		at91_set_B_periph(AT91_PIN_PA25, 0);	/* ERX2 */
+ 		at91_set_B_periph(AT91_PIN_PA26, 0);	/* ERX3 */
+ 		at91_set_B_periph(AT91_PIN_PA27, 0);	/* ERXCK */
++		at91_set_A_periph(AT91_PIN_PA23, 0);	/* TWD */
++		at91_set_A_periph(AT91_PIN_PA24, 0);	/* TWCK */
++		at91_set_B_periph(AT91_PIN_PA10, 0);	/* ETX2 */
++		at91_set_B_periph(AT91_PIN_PA11, 0);	/* ETX3 */
+ 		at91_set_B_periph(AT91_PIN_PA23, 0);	/* ETX2 */
+ 		at91_set_B_periph(AT91_PIN_PA24, 0);	/* ETX3 */
+ 		at91_set_B_periph(AT91_PIN_PA22, 0);	/* ETXER */
+diff --git a/arch/arm/mach-at91/board-sam9g20ek.c b/arch/arm/mach-at91/board-sam9g20ek.c
+index 1325a50..0268a12 100644
+--- a/arch/arm/mach-at91/board-sam9g20ek.c
++++ b/arch/arm/mach-at91/board-sam9g20ek.c
+@@ -131,7 +131,7 @@ static struct spi_board_info ek_spi_devices[] = {
+  */
+ static struct at91_eth_data __initdata ek_macb_data = {
+ 	.phy_irq_pin	= AT91_PIN_PA7,
+-	.is_rmii	= 1,
++	.is_rmii	= 0,
+ };
+ 
+ static void __init ek_add_device_macb(void)
+-- 
+1.7.4.1
+

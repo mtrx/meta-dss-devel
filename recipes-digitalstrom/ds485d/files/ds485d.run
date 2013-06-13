@@ -1,0 +1,29 @@
+#!/bin/sh
+
+DAEMON=/usr/bin/ds485d
+
+DSID="3504175FEFF`ifconfig eth0 | grep 'HWaddr' | awk '{ print $5}' | sed s#:#0#2 | sed s#:##g`"
+
+DSID_OPT=
+
+if [[ ${#DSID} -eq 24 ]]; then
+    DSID_OPT="-i $DSID"
+else
+    echo "Could not calculate dSID, proceeding anyway"
+fi
+
+OPTIONS="-F /dev/ttyS2 $DSID_OPT"
+
+while [ ! -x $DAEMON ]; do
+    echo "$0: $DAEMON not found"
+    sleep 10;
+done
+
+exec 2>&1
+
+if [ -x /bin/nice ]; then
+    nice -n -10 $DAEMON $OPTIONS
+else
+    $DAEMON $OPTIONS
+fi
+

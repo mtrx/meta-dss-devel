@@ -1,0 +1,50 @@
+From b555f406d359b827a6679568c6faf45712187d39 Mon Sep 17 00:00:00 2001
+From: Christian Hitz <christian.hitz@aizo.com>
+Date: Fri, 23 Sep 2011 16:19:26 +0200
+Subject: [PATCH 09/16] change mtd partitions to fit bigger u-boot
+
+---
+ include/configs/digitalSTROM.h |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/include/configs/digitalSTROM.h b/include/configs/digitalSTROM.h
+index b401386..079fed1 100644
+--- a/include/configs/digitalSTROM.h
++++ b/include/configs/digitalSTROM.h
+@@ -200,7 +200,7 @@
+ #define MTDIDS_DEFAULT		"nand0=atmel_nand"
+ #define MTDPARTS_DEFAULT	"mtdparts=atmel_nand:"	\
+ 					"128k(bootstrap),"			\
+-					"256k(uboot)ro,"			\
++					"512k(uboot)ro,"			\
+ 					"256k(uboot-env),"			\
+ 					"2M(kernel-rescue),"			\
+ 					"2M(kernel-prod),"			\
+@@ -269,8 +269,8 @@
+ 
+ /* bootstrap + u-boot + env + linux in nandflash */
+ #define CONFIG_ENV_IS_IN_NAND	1
+-#define CONFIG_ENV_OFFSET		0x60000
+-#define CONFIG_ENV_OFFSET_REDUND	0x80000
++#define CONFIG_ENV_OFFSET		0xa0000
++#define CONFIG_ENV_OFFSET_REDUND	0xc0000
+ #define CONFIG_ENV_SIZE		0x20000		/* 1 sector = 128 kB */
+ #define CONFIG_BOOTCOMMAND	"run boot_system"
+ #define CONFIG_BOOTARGS		"console=ttyS0,115200 "			\
+@@ -296,10 +296,10 @@
+  *
+  */
+ #define CONFIG_EXTRA_ENV_SETTINGS \
+-				"kernel_addr=0x2A0000\0" \
++				"kernel_addr=0x2E0000\0" \
+ 				"rootfs_part=6\0" \
+-                                "setup_sysrescue=echo \"Selecting rescue/update system\";setenv kernel_addr 0xA0000;setenv rootfs_part 5\0" \
+-                                "setup_sysprod=echo \"Selecting production system\";setenv kernel_addr 0x2A0000;setenv rootfs_part 6\0" \
++                                "setup_sysrescue=echo \"Selecting rescue/update system\";setenv kernel_addr 0xE0000;setenv rootfs_part 5\0" \
++                                "setup_sysprod=echo \"Selecting production system\";setenv kernel_addr 0x2E0000;setenv rootfs_part 6\0" \
+                                 "setup_sys=run setup_sysprod\0" \
+                                 "select_setup=run setup_sys\$bootsel || run setup_sysrescue\0" \
+ 				"setargs=setenv bootargs console=ttyS0,115200 root=/dev/mtdblock\$rootfs_part rw rootfstype=jffs2 " MTDPARTS_DEFAULT "\0" \
+-- 
+1.7.4.1
+

@@ -1,0 +1,17 @@
+#!/bin/sh
+
+METERINGDIR="/usr/share/dss/data/metering"
+
+mkdir -p $METERINGDIR
+
+OPTIONS="-l unix:/var/run/rrdcached.sock -g -F -b $METERINGDIR -B"
+
+APP=/usr/bin/rrdcached
+
+while [ ! -x $APP ]; do
+    echo "$0: $APP not found"
+    sleep 10;
+done
+
+exec 2>&1
+$APP $OPTIONS 2>&1 >/dev/null

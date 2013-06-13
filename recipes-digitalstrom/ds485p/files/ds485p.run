@@ -1,0 +1,15 @@
+#!/bin/sh
+
+DAEMON=/usr/bin/ds485p
+PORT="-l 8440"
+
+OPTIONS="-F $PORT"
+
+while [ ! -x $DAEMON ]; do
+    echo "$0: $DAEMON not found"
+    sleep 10;
+done
+
+exec 2>&1
+$DAEMON $OPTIONS
+

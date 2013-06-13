@@ -1,0 +1,38 @@
+From bffad76210f9a89b5d258552986b1f90887813eb Mon Sep 17 00:00:00 2001
+From: Johannes Winkelmann <johannes.winkelmann@aizo.com>
+Date: Fri, 24 Sep 2010 11:16:06 +0200
+Subject: [PATCH 07/20] change the default to boot the productive system
+
+---
+ include/configs/digitalSTROM.h |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/include/configs/digitalSTROM.h b/include/configs/digitalSTROM.h
+index 48445b8..6abb9e7 100644
+--- a/include/configs/digitalSTROM.h
++++ b/include/configs/digitalSTROM.h
+@@ -289,9 +289,9 @@
+  * the later will call a function which appends the value of the 'bootsel'
+  * variable to the end:
+  *  bootsel empty -> setup_sys is called
+- *  bootsel = 'prod' -> setup_sys is called
+- *  bootsel = 'rescue' -> setup_sys is called
+- *  bootsel = (something else) -> setup_sys(somethingelse) is called and 
++ *  bootsel = 'prod' -> setup_sysprod is called
++ *  bootsel = 'rescue' -> setup_sysrescue is called
++ *  bootsel = (something else) -> setup_sys(somethingelse) is called and
+  *                                will fail, setup_sys is called afterwards
+  *
+  */
+@@ -300,7 +300,7 @@
+ 				"rootfs_part=6\0" \
+                                 "setup_sysrescue=echo \"Selecting rescue/update system\";setenv kernel_addr 0xA0000;setenv rootfs_part 5\0" \
+                                 "setup_sysprod=echo \"Selecting production system\";setenv kernel_addr 0x2A0000;setenv rootfs_part 6\0" \
+-                                "setup_sys=run setup_sysrescue\0" \
++                                "setup_sys=run setup_sysprod\0" \
+                                 "select_setup=run setup_sys\$bootsel || run setup_sysrescue\0" \
+ 				"setargs=setenv bootargs console=ttyS0,115200 root=/dev/mtdblock\$rootfs_part rw rootfstype=jffs2 " MTDPARTS_DEFAULT "\0" \
+                                 "boot_system=run select_setup;run setargs;nboot 0x22000000 0 \$kernel_addr;bootm 0x22000000\0" \
+-- 
+1.7.9.5
+

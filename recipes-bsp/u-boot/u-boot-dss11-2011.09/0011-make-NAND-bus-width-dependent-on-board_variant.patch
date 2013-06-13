@@ -1,0 +1,62 @@
+From 99fbb464c0682a499056e5677e0a4de82dd23f5e Mon Sep 17 00:00:00 2001
+From: Christian Hitz <christian.hitz@aizo.com>
+Date: Fri, 30 Sep 2011 08:48:40 +0200
+Subject: [PATCH 11/16] make NAND bus width dependent on board_variant
+
+pass NAND bus width vi system_rev to kernel
+---
+ board/aizo/digitalSTROM/digitalSTROM.c |   18 ++++++++++++++++++
+ include/configs/digitalSTROM.h         |    1 +
+ 2 files changed, 19 insertions(+), 0 deletions(-)
+
+diff --git a/board/aizo/digitalSTROM/digitalSTROM.c b/board/aizo/digitalSTROM/digitalSTROM.c
+index f48139d..61dabb7 100644
+--- a/board/aizo/digitalSTROM/digitalSTROM.c
++++ b/board/aizo/digitalSTROM/digitalSTROM.c
+@@ -50,6 +50,20 @@ static int board_variant = -1;
+  * Miscelaneous platform dependent initialisations
+  */
+ 
++#define BOARD_HAVE_NAND_16BIT   (1 << 31)
++u32 get_board_rev(void)
++{
++    switch (board_variant) {
++        case 0:
++        case 1:
++        case 2:
++            return BOARD_HAVE_NAND_16BIT;
++            break;
++        default:
++            return 0;
++    }
++}
++
+ #ifdef CONFIG_CMD_NAND
+ static void at91sam9260ek_nand_hw_init(void)
+ {
+@@ -246,6 +260,10 @@ int board_eth_init(bd_t *bis)
+ 			break;
+ 		case 1:	puts("(small) ");
+ 			break;
++        case 2: puts("(small V004) ");
++            break;
++        case 3: puts("(small V005) ");
++            break;
+ 		default:	puts("(unknown) ");
+ 	}
+ 	return rc;
+diff --git a/include/configs/digitalSTROM.h b/include/configs/digitalSTROM.h
+index 079fed1..bc4afe0 100644
+--- a/include/configs/digitalSTROM.h
++++ b/include/configs/digitalSTROM.h
+@@ -57,6 +57,7 @@
+ #define CONFIG_ARCH_CPU_INIT
+ #undef	CONFIG_USE_IRQ			/* we don't need IRQ/FIQ stuff	*/
+ #define CONFIG_CMDLINE_TAG		/* enable passing of ATAGs */
++#define CONFIG_REVISION_TAG     /* enable passing of board revision tag */
+ #define CONFIG_SETUP_MEMORY_TAGS
+ #define CONFIG_INITRD_TAG
+ #define CONFIG_SKIP_LOWLEVEL_INIT
+-- 
+1.7.4.1
+

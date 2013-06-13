@@ -1,0 +1,15 @@
+# TEMPORARY HACK
+PRINC = "3"
+RREPLACES_gettext-runtime = "gettext"
+RCONFLICTS_gettext-runtime = "gettext"
+
+EXTRA_OECONF += "--enable-libasprintf"
+
+FILES_gettext-runtime = "${bindir}/gettext \
+                         ${bindir}/ngettext \
+                         ${bindir}/envsubst \
+                         ${bindir}/gettext.sh \
+                         ${libdir}/libasprintf.so.* \
+                         ${libdir}/GNU.Gettext.dll \
+                        "
+

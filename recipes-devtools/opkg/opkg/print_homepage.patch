@@ -1,0 +1,97 @@
+Index: trunk/libopkg/pkg_parse.c
+===================================================================
+--- trunk/libopkg/pkg_parse.c	(revision 633)
++++ trunk/libopkg/pkg_parse.c	(working copy)
+@@ -165,6 +165,13 @@
+ 			pkg->filename = parse_simple("Filename", line);
+ 		break;
+ 
++	case 'H':
++		if((mask & PFM_HOMEPAGE) && is_field("Homepage", line))
++			pkg->homepage = parse_simple("Homepage", line);
++        else if((mask & PFM_HOMEPAGE) && is_field("HomePage", line))
++			pkg->homepage = parse_simple("HomePage", line);
++		break;
++
+ 	case 'I':
+ 		if ((mask & PFM_INSTALLED_SIZE) && is_field("Installed-Size", line)) {
+ 			char *tmp = parse_simple("Installed-Size", line);
+Index: trunk/libopkg/pkg_parse.h
+===================================================================
+--- trunk/libopkg/pkg_parse.h	(revision 633)
++++ trunk/libopkg/pkg_parse.h	(working copy)
+@@ -51,6 +51,7 @@
+ #define PFM_SUGGESTS		(1 << 24)
+ #define PFM_TAGS		(1 << 25)
+ #define PFM_VERSION		(1 << 26)
++#define PFM_HOMEPAGE		(1 << 27)
+ 
+ #define PFM_ALL	(~(uint)0)
+ 
+Index: trunk/libopkg/pkg.c
+===================================================================
+--- trunk/libopkg/pkg.c	(revision 633)
++++ trunk/libopkg/pkg.c	(working copy)
+@@ -83,6 +83,7 @@
+      pkg->src = NULL;
+      pkg->architecture = NULL;
+      pkg->maintainer = NULL;
++     pkg->homepage = NULL;
+      pkg->section = NULL;
+      pkg->description = NULL;
+      pkg->state_want = SW_UNKNOWN;
+@@ -182,6 +183,10 @@
+ 		free(pkg->maintainer);
+ 	pkg->maintainer = NULL;
+ 
++	if (pkg->homepage)
++		free(pkg->homepage);
++	pkg->homepage = NULL;
++
+ 	if (pkg->section)
+ 		free(pkg->section);
+ 	pkg->section = NULL;
+@@ -351,6 +356,8 @@
+ 	  oldpkg->section = xstrdup(newpkg->section);
+      if(!oldpkg->maintainer)
+ 	  oldpkg->maintainer = xstrdup(newpkg->maintainer);
++     if(!oldpkg->homepage)
++	  oldpkg->homepage = xstrdup(newpkg->homepage);
+      if(!oldpkg->description)
+ 	  oldpkg->description = xstrdup(newpkg->description);
+ 
+@@ -702,6 +709,14 @@
+               fprintf(fp, "Filename: %s\n", pkg->filename);
+ 	  }
+ 	  break;
++     case 'h':
++     case 'H':
++	  if (strcasecmp(field, "Homepage") == 0) {
++	       if (pkg->homepage) {
++                   fprintf(fp, "Homepage: %s\n", pkg->homepage);
++	       }
++	  }
++	  break;
+      case 'i':
+      case 'I':
+ 	  if (strcasecmp(field, "Installed-Size") == 0) {
+@@ -864,6 +879,7 @@
+ 	pkg_formatted_field(fp, pkg, "Filename");
+ 	pkg_formatted_field(fp, pkg, "Conffiles");
+ 	pkg_formatted_field(fp, pkg, "Source");
++	pkg_formatted_field(fp, pkg, "Homepage");
+ 	pkg_formatted_field(fp, pkg, "Description");
+ 	pkg_formatted_field(fp, pkg, "Installed-Time");
+ 	pkg_formatted_field(fp, pkg, "Tags");
+Index: trunk/libopkg/pkg.h
+===================================================================
+--- trunk/libopkg/pkg.h	(revision 633)
++++ trunk/libopkg/pkg.h	(working copy)
+@@ -127,6 +127,7 @@
+      char *section;
+      char *maintainer;
+      char *description;
++     char *homepage;
+      char *tags;
+      pkg_state_want_t state_want;
+      pkg_state_flag_t state_flag;

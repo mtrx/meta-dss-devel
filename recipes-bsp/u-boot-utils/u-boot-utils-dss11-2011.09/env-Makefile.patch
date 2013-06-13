@@ -1,0 +1,19 @@
+--- u-boot-1.2.0/tools/env/Makefile.orig	2007-12-12 12:52:51.508745236 -0800
++++ u-boot-1.2.0/tools/env/Makefile	2007-12-12 12:54:09.997218038 -0800
+@@ -40,7 +40,7 @@
+ 
+ # Some files complain if compiled with -pedantic, use HOSTCFLAGS_NOPED
+ $(obj)fw_printenv:	$(HOSTSRCS) $(HEADERS)
+-	$(HOSTCC) $(HOSTCFLAGS_NOPED) $(HOSTLDFLAGS) -o $@ $(HOSTSRCS)
++	$(CROSS_COMPILE)gcc $(TARGET_CFLAGS) $(HOSTCPPFLAGS) -o $@ $(HOSTSRCS)
+ 
+ clean:
+ 	rm -f $(obj)fw_printenv $(obj)crc32.c
+@@ -43,6 +43,6 @@
+ 
+ include $(TOPDIR)/rules.mk
+ 
+-sinclude $(obj).depend
++#sinclude $(obj).depend
+ 
+ #########################################################################

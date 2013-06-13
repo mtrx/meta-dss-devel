@@ -1,0 +1,46 @@
+From 40f1f4c86c9e710f015b774d8e28d97581ad1d91 Mon Sep 17 00:00:00 2001
+From: Christian Hitz <christian.hitz@aizo.com>
+Date: Thu, 29 Sep 2011 16:19:21 +0200
+Subject: [PATCH 11/17] align NAND settings with U-Boot settings
+
+---
+ arch/arm/mach-at91/board-sam9g20ek.c |   18 +++++++++---------
+ 1 files changed, 9 insertions(+), 9 deletions(-)
+
+diff --git a/arch/arm/mach-at91/board-sam9g20ek.c b/arch/arm/mach-at91/board-sam9g20ek.c
+index c61e0e3..ed9de52 100644
+--- a/arch/arm/mach-at91/board-sam9g20ek.c
++++ b/arch/arm/mach-at91/board-sam9g20ek.c
+@@ -180,20 +180,20 @@ static struct atmel_nand_data __initdata ek_nand_data = {
+ 
+ static struct sam9_smc_config __initdata ek_nand_smc_config = {
+ 	.ncs_read_setup		= 0,
+-	.nrd_setup		= 2,
++	.nrd_setup		= 1,
+ 	.ncs_write_setup	= 0,
+-	.nwe_setup		= 2,
++	.nwe_setup		= 1,
+ 
+-	.ncs_read_pulse		= 4,
+-	.nrd_pulse		= 4,
+-	.ncs_write_pulse	= 4,
+-	.nwe_pulse		= 4,
++	.ncs_read_pulse		= 3,
++	.nrd_pulse		= 3,
++	.ncs_write_pulse	= 3,
++	.nwe_pulse		= 3,
+ 
+-	.read_cycle		= 7,
+-	.write_cycle		= 7,
++	.read_cycle		= 5,
++	.write_cycle		= 5,
+ 
+ 	.mode			= AT91_SMC_READMODE | AT91_SMC_WRITEMODE | AT91_SMC_EXNWMODE_DISABLE,
+-	.tdf_cycles		= 3,
++	.tdf_cycles		= 2,
+ };
+ 
+ static void __init ek_add_device_nand(void)
+-- 
+1.7.4.1
+

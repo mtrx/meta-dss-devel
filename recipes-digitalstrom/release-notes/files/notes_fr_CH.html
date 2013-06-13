@@ -1,0 +1,126 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title></title>
+    <meta content="text/html; charset=utf-8" http-equiv="Content-Type" />
+  </head>
+  <body>
+  <div class="x-text-margin x-black-text">
+    <h2>Notes de mise à jour</h2>
+    <h3>dSS V1.6.0</h3>
+    <p style="color:black;">
+      Les notes de mise à jour (Software Release Notes - SRN) permettent à aizo de communiquer à l’utilisateur, les dernières modifications apportées aux logiciels de produits existants. Ces logiciels pourront être actualisés par l’utilisateur.
+    </p>
+    <div class="x-text-margin">
+        &nbsp;SRN-2012-07 / v1.0<br/>
+    </div>
+    <h3>Produits concernés</h3>
+    <div class="x-text-margin">
+      <span class="x-green-text">
+        <b>Produit: digitalSTROM-Server dSS11</b>
+      </span>
+      <ul style="list-style-type:none;margin-left:20px;margin-right:20px">
+        <li style="padding-bottom:2px;padding-top:5px;">
+          <b>Désignation du logiciel:</b> dSS Version
+        </li>
+        <li style="padding-bottom:2px;">
+          <b>Nouvelle version:</b> 1.6.0
+        </li>
+      </ul>
+      <br/>
+      <span class="x-green-text">
+        <b>Produit: digitalSTROM-Meter dSM11</b>
+      </span>
+      <ul style="list-style-type:none;margin-left:20px;margin-right:20px">
+        <li style="padding-bottom:2px;padding-top:5px;">
+          <b>Désignation du logiciel:</b> ARM Software Version
+        </li>
+        <li style="padding-bottom:2px;">
+          <b>Nouvelle version:</b> 1.11.0.0
+        </li>
+        <li style="padding-bottom:2px;">
+          <b>Désignation du logiciel:</b> DSP Software Version 
+        </li>
+        <li style="padding-bottom:2px;">
+          <b>Nouvelle version:</b> 1.2.2.0
+        </li>
+      </ul>
+    </div>
+    <h3>Renseignements concernant l‘installation</h3>
+    <ul style="list-style-type:disc;margin-left:20px;margin-right:20px">
+      <li style="padding-bottom:5px">
+          La mise à jour du logiciel est effectuée dans le configurateur digitalSTROM sous <i>Système / Mise à jour du système</i>. Le dSS11 doit disposer d’une liaison internet.
+      </li>
+      <li style="padding-bottom:5px">
+          Avant d’effectuer la mise à jour, il est conseillé de procéder à une sauvegarde des réglages du système. La sauvegarde peut être effectuée sous <i>Système / Maintenance</i> du système.
+      </li>
+      <li style="padding-bottom:5px">
+          Après l’installation de la mise à jour, le système vérifie automatiquement la présence de mises à jour du firmware pour dSM, lesquelles doivent être installées manuellement. Installez la mise à jour par l’intermédiaire de la fonction <i>‚Installer firmware dSM‘ </i>. Après l’installation, recherchez à nouveau les mises à jour, afin de vérifier si l’installation est complète sur tous les dSM.
+      </li>
+      <li style="padding-bottom:5px">
+          Si vous effectuez la mise à jour de la version dSS 1.2.1 ou d’une version ultérieure, veillez à tenir compte également des notes concernant les mises à jour antérieures. Vous trouverez une liste complète des notes de mises à jour sous <span class="x-text-link"><a href="http://www.aizo.com/de/Softwareupdates.php" target="_blank">http://www.aizo.com/de/Softwareupdates.php</a></span>.
+      </li>
+    </ul>
+	
+	<h3>Nouvelles fonctions</h3>
+    <p class="x-green-text">
+      <b>Prise en compte de conditions dans les Apps-serveur</b>
+    </p>
+    <p style="color:black;">
+       Dans les Apps-serveur ,Simulation de présence`, ,Programmation horaire` et ,Messagerie`, il est désormais possible de fixer des conditions.
+	   <br>
+	   Ceci permet de limiter l’exécution des activités définies dans les Apps. Les conditions disponibles sont les suivantes: position du soleil (jour, clair, sombre, nuit), heure du jour, jour de la semaine, présence, état de la simulation de présence, ainsi que l’état de la zone.
+    </p>
+    
+    <p class="x-green-text">
+      <b>Prise en compte de la langue turque</b>
+    </p>
+    <p style="color:black;">
+      Le configurateur digitalSTROM ainsi que la plupart des Apps-serveur sont disponibles en langue turque. Pour modifier la langue, il suffit d’utiliser la barre d’état (en bas à droite) dans le configurateur. Les Apps-serveurs sont automatiquement reprises dans la langue choisie. Les manuels ‚Utilisation / Réglages‘ et ‚Installation‘ sont également disponibles en langue turque. 
+    </p>
+    
+    <p class="x-green-text">
+      <b>Installation d’Apps-serveur par clé USB</b>
+    </p>
+    <p style="color:black;">
+      Il est possible d’actualiser le logiciel du digitalSTROM-Server au moyen d’une clé USB. 
+	  <br>
+	  Désormais, les Apps-serveur non encore installées peuvent être ajoutées à l’aide d’une clé USB. Ceci permet de les installer même sans accès internet.
+    </p>
+    
+    
+    <h3>Améliorations</h3>
+    <ul style="list-style-type:disc;margin-left:20px;margin-right:20px">
+      <li style="padding-bottom:5px">
+	     Lors d’une mise à jour du système de R1.6.0 vers des versions futures, la mise à jour du firmware dSM sera effectuée automatiquement après la mise à jour du dSS. Pour ailleurs l’information sur l’état d’avancement de la mise à jour a été améliorée.
+      </li>
+      <li style="padding-bottom:5px">
+	     Les Apps-serveur ,Bidgely Meter` et ,Eragy Meter‘ sont également disponibles en langue anglaise. 
+      </li>
+      <li style="padding-bottom:5px">
+	     La fonction ,Rafraîchir l’affichage` maintient la sélection actuelle de la zone ou du Meter. 
+      </li>
+      <li style="padding-bottom:5px">
+	     Les fonctions ,Ajouter au secteur’ et ,Supprimer du secteur` ont placé une valeur erronée dans les bornes GR-KL2x0, ce qui faisait qu’une commande de stop de volets roulants ou de stores placés dans un secteur donné, avait également pour effet de déclencher un stop dans les autres secteurs. Pour corriger ce comportement, il y a lieu de placer une nouvelle fois les appareils dans les secteurs, resp. de les retirer. 
+      </li>
+      <li style="padding-bottom:5px">
+	    Le dSM était en mesure de clignoter en rouge, dans des cas rares, ou indiquait une version erronée du logiciel DSP. Ce problème est résolu.
+     </li>
+	 <li style="padding-bottom:5px">
+	    Dans ,Système / Paramétrage du système` était affichée l’heure locale du navigateur, au lieu de l’heure du système. Désormais, l’affichage de l’heure correspond à l’heure locale du dSS.
+     </li>
+	 <li style="padding-bottom:5px">
+	    Le nom du digitalSTROM-Server n’a été publié que suite à une première modification par Bonjour, ce qui avait pour conséquence de ne pas afficher le serveur dans les apps Smartphone. Ce problème est résolu.
+     </li>
+    </ul>
+	
+	
+    <h3>Documents</h3>
+    <p style="color:black;">
+      Vous trouverez de plus amples renseignements concernant ces nouvelles fonctions et leur utilisation, dans le manuel digitalSTROM dans la rubrique ‚Introduction, utilisation, réglages‘ et sous ‚Installation‘. 
+      <br/>
+      La version actuelle du manuel peut être téléchargée au format PDF sous <span class="x-text-link"><a href="http://www.aizo.com/de/support/Bedienungsanleitung_D.php" target="_blank">http://www.aizo.com/de/support/Bedienungsanleitung_D.php</a></span>.
+    </p>
+  </div>
+  </body>
+</html>

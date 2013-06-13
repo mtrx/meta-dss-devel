@@ -1,0 +1,57 @@
+#!/bin/sh
+#
+# Perform the dSM firmware upgrade in broadcast mode
+
+UPGRADE=/usr/bin/dsm-firmware-upgrade
+LOGDIR=/var/log/dsm-firmware-upgrade
+LOGFILE=$LOGDIR/dsm-firmware-upgrade.log
+FIRMWARE_DIRECTORY=/usr/share/dsm-firmware
+LAST_ERROR=0
+
+DSS11_LOCALE=
+if [[ -f /etc/default/locale ]]; then
+    . /etc/default/locale
+else
+    DSS11_LOCALE="de_DE"
+fi
+
+log()
+{
+    echo "[`date`] $1" >> $LOGFILE
+}
+
+mkdir -p $LOGDIR
+
+if [ ! -d "$FIRMWARE_DIRECTORY" ]; then
+    log "Error: Firmware directory '$FIRMWARE_DIRECTORY' does not exist"
+    exit 128
+fi
+
+if [ $(ls -1 "$FIRMWARE_DIRECTORY"/dsm-dsp*.img 2>/dev/null|wc -l) -ne 1 ] ||
+   [ $(ls -1 "$FIRMWARE_DIRECTORY"/dsm-arm*.img 2>/dev/null|wc -l) -ne 1 ]; then
+    log "Error: wrong number of image files in '$FIRMWARE_DIRECTORY' found. Exiting"
+    exit 128
+fi
+
+ARMFW=`ls $FIRMWARE_DIRECTORY/dsm-arm*.img 2>/dev/null`
+DSPFW=`ls $FIRMWARE_DIRECTORY/dsm-dsp*.img 2>/dev/null`
+
+log "dSM update start ---------------"
+
+LC_MESSAGES="$DSS11_LOCALE" LC_CTYPE="$DSS11_LOCALE" LC_TIME="$DSS11_LOCALE" $UPGRADE -m /var/cache/updatemessage -D -B $ARMFW $DSPFW >> $LOGFILE
+DSMS_UPDATED=$?
+if [ $DSMS_UPDATED -eq 0 ]; then
+    log "No dSMs updated"
+else
+    if [ $DSMS_UPDATED -ge 128 ]; then
+        log "-- Update returned with error: $DSMS_UPDATED"
+    else
+        log "-- Update done ($DSMS_UPDATED dSM(s))"
+    fi
+fi
+
+dsm_config_update -a -c tcp://localhost:8442
+
+log "dSM update end ---------------"
+
+exit $DSMS_UPDATED

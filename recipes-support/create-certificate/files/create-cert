@@ -1,0 +1,64 @@
+#!/bin/sh
+
+# Version 0.2.3
+
+CERTPATH="$1"
+DAYS_VALID=9131
+TMPFILE=`mktemp`
+
+which openssl >/dev/null
+if [ "$?" -ne "0" ]; then
+    echo "Please install openssl and make sure it is in your PATH!"
+    exit 1
+fi
+
+if [ ! -d "$1" ]; then
+    echo "Output directory does not exist!"
+    exit 1
+fi
+
+cleanup ()
+{
+    date -s "`cat $TMPFILE`"
+    rm -f $TMPFILE
+}
+date +"%Y-%m-%d %T" > $TMPFILE
+trap cleanup EXIT
+date -u -s "2010-01-01 00:00:00"
+
+if [ ! -s "$CERTPATH/privkey.pem" ]; then
+    openssl genrsa -out $CERTPATH/privkey.pem 1024
+    if [ "$?" -ne "0" ]; then
+        echo "Failed to generate private key!"
+        exit 1
+    fi
+    chmod 400 $CERTPATH/privkey.pem
+else
+    echo "Reusing existing privkey.pem file as private key."
+fi
+
+if [ ! -s "$CERTPATH/certreq.csr" ]; then
+    openssl req -subj "/C=XX/L=Default City/O=digitalSTROM.org" -new -batch -days $DAYS_VALID -key $CERTPATH/privkey.pem -out $CERTPATH/certreq.csr
+    if [ "$?" -ne "0" ]; then
+        echo "Failed to create a certificate signing request!"
+        exit 1
+    fi
+else
+    echo "Reusing existing certreq.csr file as certificate signing request."
+fi
+
+openssl x509 -req -days $DAYS_VALID -in $CERTPATH/certreq.csr -signkey $CERTPATH/privkey.pem -out $CERTPATH/dsscert.pem
+if [ "$?" -ne "0" ]; then
+    echo "Could not create self signed certificate!"
+    exit 1
+fi
+
+cat $CERTPATH/privkey.pem >> $CERTPATH/dsscert.pem
+if [ "$?" -ne "0" ]; then
+    echo "Failed to add privkey.pem to dsscert.pem"
+    exit 1
+fi
+
+echo "Certificate created as \"dsscert.pem\""
+
+exit 0

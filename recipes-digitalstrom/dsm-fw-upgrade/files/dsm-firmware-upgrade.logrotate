@@ -1,0 +1,7 @@
+/var/log/dsm-firmware-upgrade/*log {
+    rotate 2
+    size 256k
+    missingok
+    notifempty
+}
+

@@ -1,0 +1,32 @@
+/var/log/dss/*log {
+    rotate 10
+    size 5M
+    missingok
+    notifempty
+    sharedscripts
+    postrotate
+        PID_DSS=`pidof -s dss`
+        if [ -n "$PID_DSS" ]; then
+            kill -SIGUSR1 $PID_DSS > /dev/null 2>&1
+        fi
+        PID_LOG=`cat /etc/runit/dss/log/supervise/pid`
+        if [ -n "$PID_LOG" ]; then
+           kill -HUP $PID_LOG > /dev/null 2>&1
+        fi
+    endscript
+}
+
+/var/log/dss/js/*log {
+    rotate 2
+    size 1M
+    missingok
+    notifempty
+    sharedscripts
+    postrotate
+        PID_DSS=`pidof -s dss`
+        if [ -n "$PID_DSS" ]; then
+            kill -SIGUSR1 $PID_DSS > /dev/null 2>&1
+        fi
+    endscript
+}
+

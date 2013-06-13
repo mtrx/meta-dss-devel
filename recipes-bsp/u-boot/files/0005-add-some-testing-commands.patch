@@ -1,0 +1,191 @@
+From 47d2973fb0447ea28d556577b85b45b4840499bf Mon Sep 17 00:00:00 2001
+From: Johannes Winkelmann <johannes.winkelmann@aizo.com>
+Date: Mon, 13 Sep 2010 15:05:44 +0200
+Subject: [PATCH 5/7] add some testing commands
+
+---
+ board/aizo/digitalSTROM/digitalSTROM.c |  150 ++++++++++++++++++++++++++++++++
+ include/configs/digitalSTROM.h         |    7 +-
+ 2 files changed, 153 insertions(+), 4 deletions(-)
+
+diff --git a/board/aizo/digitalSTROM/digitalSTROM.c b/board/aizo/digitalSTROM/digitalSTROM.c
+index 37a7aae..7857a76 100644
+--- a/board/aizo/digitalSTROM/digitalSTROM.c
++++ b/board/aizo/digitalSTROM/digitalSTROM.c
+@@ -262,3 +262,153 @@ int print_cpuinfo (void)
+ 	return 0;
+ }
+ #endif
++
++
++static int cmd_clkdiv(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
++{
++  int rcode = 0;
++  int value = -1;
++
++  puts("clkdiv test\n");
++
++  at91_set_gpio_output(CONFIG_RED_LED, 1);
++  at91_set_gpio_output(CONFIG_GREEN_LED, 1);
++  at91_set_gpio_output(CONFIG_YELLOW_LED, 1);
++  
++  at91_set_gpio_value(CONFIG_GREEN_LED, 0);
++  at91_set_gpio_value(CONFIG_RED_LED, 1);
++  at91_set_gpio_value(CONFIG_YELLOW_LED, 0);
++  
++  at91_set_gpio_input(AT91_PIN_PB2, 1);
++  at91_set_deglitch(AT91_PIN_PB2, 1);
++  at91_set_gpio_input(AT91_PIN_PB21, 1);
++  at91_set_deglitch(AT91_PIN_PB21, 1);
++
++  udelay(1000000);
++
++  value = at91_get_gpio_value(AT91_PIN_PB2);
++  printf("2: (%d) %d\n", AT91_PIN_PB2, value);
++  value = -1;
++  value = at91_get_gpio_value(AT91_PIN_PB21);
++  printf("21: (%d) %d\n", AT91_PIN_PB21, value);
++
++
++
++  value = at91_get_gpio_value(CONFIG_GREEN_LED);
++  printf("21: %d\n", value);
++
++  
++  at91_set_gpio_value(CONFIG_GREEN_LED, 1);
++  at91_set_gpio_value(CONFIG_RED_LED, 0);
++  at91_set_gpio_value(CONFIG_YELLOW_LED, 0);
++
++
++  
++  return rcode;
++}
++
++static int cmd_setup_clocks(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
++{
++  /* enable clocks */
++  at91_sys_write(AT91_PMC_PCER, 1 << AT91SAM9260_ID_PIOA);
++  at91_sys_write(AT91_PMC_PCER, 1 << AT91SAM9260_ID_PIOB);
++  
++  return 0;
++}
++
++
++static int cmd_dssgpio(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
++{
++  printf("dssgpio %d\n", argc);
++
++  switch (argc) {
++  case 0:
++  case 1:
++  case 2:
++    break;
++
++  case 3:
++    if (strncmp(argv[1], "get", 3) == 0) {
++      int value;
++      int pin;
++      char bank;
++
++      bank = argv[2][0]; 
++      if (bank < 'A' || bank > 'E') {
++        break;
++      }
++      pin = PIN_BASE;
++      pin += (bank - 'A') * 32;
++      pin += simple_strtol(argv[2]+1, NULL, 10);
++
++      value = at91_get_gpio_value(pin);
++      printf("GPIO %s (%d): %d\n", argv[2], pin, value);
++      return 0;
++    }
++    break;
++
++  case 4: {
++    int value;
++    int pin;
++    char bank;
++
++    bank = argv[2][0]; 
++    if (bank < 'A' || bank > 'E') {
++      break;
++    }
++    pin = PIN_BASE;
++    pin += (bank - 'A') * 32;
++    pin += simple_strtol(argv[2]+1, NULL, 10);
++    
++    if (strncmp(argv[1], "mode", 4) == 0) {
++      /* dssgpio mode <nr> <in/out> */
++      if (strncmp(argv[3], "in", 2) == 0) {
++        printf("Setting GPIO %s (%d) to input\n", argv[2], pin);
++        at91_set_gpio_input(pin, 1);
++        at91_set_deglitch(pin, 1);
++      } else {
++        printf("Setting GPIO %s (%d) to output\n", argv[2], pin);
++        at91_set_gpio_output(pin, 1);
++      }
++      return 0;
++    } else if (strncmp(argv[1], "set", 3) == 0) {
++      value = (argv[3][0] == '0' ? 0 : 1);
++      printf("Setting GPIO %s (%d) to value %d\n", argv[2], pin, value);
++      at91_set_gpio_value(pin, value);
++      return 0;
++    }
++    break;
++  }
++  default:
++    break;
++  }
++
++  printf("dssgpio (mode <pin (in|out)|set <pin> (0|1)|get <pin>)\n");
++  
++  return -1;
++}
++
++
++U_BOOT_CMD(
++	clkdiv ,    2,    1,     cmd_clkdiv,
++	"clkdiv test",
++	"clkdiv [duration]\n"
++	"    - divide clock to gpio\n"
++);
++
++U_BOOT_CMD(
++	setup_clocks ,    1,    1,     cmd_setup_clocks,
++	"cmd_setup_clocks",
++	"cmd_setup_clocks\n"
++);
++
++
++U_BOOT_CMD(
++	dssgpio ,    4,    1,     cmd_dssgpio,
++	"dssgpio <cmd> [value]\n",
++	"dssgpio <cmd> [value]\n"
++	"  where command can be one of 'mode', 'set', 'get'\n"
++	"    mode <pin> (in|out)\n"
++	"    set <pin> (0|1)\n"
++	"    get <pin>\n"
++);
+diff --git a/include/configs/digitalSTROM.h b/include/configs/digitalSTROM.h
+index ece90de..0b89472 100644
+--- a/include/configs/digitalSTROM.h
++++ b/include/configs/digitalSTROM.h
+@@ -69,12 +69,11 @@
+ #undef CONFIG_USART2
+ #define CONFIG_USART3		1	/* USART 3 is DBGU */
+ 
+-#if 0
+ /* LED */
+ #define CONFIG_AT91_LED
+-#define	CONFIG_RED_LED		AT91_PIN_PA9	/* this is the power led */
+-#define	CONFIG_GREEN_LED	AT91_PIN_PA6	/* this is the user led */
+-#endif
++#define	CONFIG_RED_LED		AT91_PIN_PB1
++#define	CONFIG_GREEN_LED	AT91_PIN_PB0
++#define	CONFIG_YELLOW_LED	AT91_PIN_PB3 /* blue, actually */
+ 
+ #define CONFIG_BOOTDELAY	3
+ 
+-- 
+1.7.1
+

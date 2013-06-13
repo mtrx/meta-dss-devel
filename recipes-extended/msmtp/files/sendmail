@@ -1,0 +1,17 @@
+#!/bin/sh
+CONFIG_FILE=/etc/msmtprc
+MAILFROM=`cat $CONFIG_FILE | sed -n '/^account/,$p' | grep "^from" | cut -d " " -f 2`
+exec awk '
+  BEGIN {
+    ORS = "\r\n";
+    PART="header";
+  }
+  PART == "body"            { print $0; next; }
+  tolower($1) ~ /^from:/    {
+    if (NF == 1) { printf("From: <%s>\r\n", MAILFROM); next; }
+    else if (substr($0, index($0,$2)) ~ /<.+>/) { print $0; next; }
+    else {printf("From: %s <%s>\r\n", substr($0, index($0,$2)), MAILFROM); next;}
+  }
+  /^[\r\n]*$/               { PART="body"; }
+                            { print $0; }
+' MAILFROM=$MAILFROM | /usr/bin/msmtp $@

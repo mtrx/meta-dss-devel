@@ -1,0 +1,224 @@
+#!/bin/sh
+#
+# Verify external storage medium and mount it
+#
+# Note: It is required that the external storage is not automatically
+# mounted by the mountall boot step (fstab: noauto).
+
+FORMAT=0
+sdoptions=''
+sd_ok=0
+usb_ok=0
+minpartsize=$((128 * 1024))
+
+test_sd ()
+{
+   if [ -d /sys/block/mmcblk0/mmcblk0p1 ]; then
+      sdsize=$(cat /sys/block/mmcblk0/mmcblk0p1/size)
+      eval `blkid | grep mmcblk0p1 | cut -f2 -d:`
+      if ((test -n "$TYPE") && 
+          (test "$TYPE" != "ext4") && 
+          (test "$TYPE" != "ext3") && 
+          (test "$TYPE" != "ext2")) ; then
+         echo "SD-CARD filesystem \'$TYPE\' is unusable and will be reformatted"
+         FORMAT=1
+      fi
+      if [ -f /etc/.sdformat ]; then
+         FORMAT=1
+         sdoptions=`head -n 1 /etc/.sdformat`
+         echo "SD-CARD requested reformat with options: \"$sdoptions\""
+         # mkfs.ext4 options, eg. "-cc" for intensive bad block tests
+      fi
+   fi
+
+   [ $sdsize -ge $minpartsize ] || return 255
+
+   umount /dev/mmcblk0p1
+   sync
+
+   if (test $FORMAT -eq 1); then
+      echo "SD-CARD creating ext4 filesystem..."
+      echo 1 > /sys/class/leds/blue/brightness
+      echo 0 > /sys/class/leds/green/brightness
+      echo 1 > /sys/class/leds/red/brightness
+
+      exec 7>&1                                                       
+      exec 8>&2                                                       
+      exec &>/var/sdcard-mkfs.log                                          
+      mkfs.ext4 -v -L DSSDATA $sdoptions /dev/mmcblk0p1
+      error=$?                                                        
+      exec 1>&7 7>&-                                                  
+      exec 2>&8 8>&-                                                  
+      echo $error >/var/sdcard-mkfs.status
+      rm -f /etc/.sdformat
+
+      sync
+      shutdown -r now
+      exit 0
+   fi
+ 
+   echo "SD-CARD filesystem check..."
+   exec 7>&1
+   exec 8>&2
+   exec &>/tmp/sdcard-fsck.log
+   fsck.ext4 -v -p /dev/mmcblk0p1
+   error=$?
+   exec 1>&7 7>&-
+   exec 2>&8 8>&-
+   echo $error >/tmp/sdcard-fsck.status
+   
+   echo -n "SD-CARD Status: "
+   cat /tmp/sdcard-fsck.log
+   cat /tmp/sdcard-fsck.status
+
+   if [ $(( $error & 4 )) != 0 ] ; then
+      echo "SD-CARD automatic repair filesystem check..."
+      exec 7>&1
+      exec 8>&2
+      exec &>/tmp/sdcard-fsck.auto.log
+      fsck.ext4 -v -y -f /dev/mmcblk0p1
+      error=$?
+      exec 1>&7 7>&-
+      exec 2>&8 8>&-
+      echo $error >/tmp/sdcard-fsck.status
+ 
+      echo -n "SD-CARD Status: "
+      cat /tmp/sdcard-fsck.auto.log
+      cat /tmp/sdcard-fsck.status
+   fi
+
+   if [ $(( $error & 2 )) != 0 ] ; then
+      echo "SD-CARD fsck requested reboot - ignored"
+   fi
+   if [ $(( $error & ~3 )) == 0 ] ; then
+      sd_ok=1
+   else
+      echo "$0: Fatal errors on SD-CARD detected [fsck:$error]"
+      touch /var/lock/sdcard-failure
+   fi
+}
+
+test_usb ()
+{
+   usbsize=0
+   if [ -d /sys/block/sda/sda1 ]; then
+      usbsize=$(cat /sys/block/sda/sda1/size)
+      if [ $usbsize -ge $minpartsize ]; then
+         eval `blkid | grep sda1 | cut -f2 -d:`
+         if [ "$TYPE" == "ext4" -a "$LABEL" == "DSSDATA" ]; then
+            echo "USB filesystem check..."
+            umount /dev/sda1
+            echo y | fsck.ext4 -v -p /dev/sda1
+            error=$?
+            if [ $(( $error & ~3 )) == 0 ] ; then
+               usb_ok=1
+            fi
+         fi
+      fi
+   fi
+}
+
+prepare_overlay()
+{
+   echo "SD-CARD creating filesystem overlays"
+   mkdir -p /media/card/sys
+   mkdir -p /media/card/sys/var
+   while read DIR; do
+      echo "  $DIR"
+      mkdir -p $DIR
+   done <<EOF
+$(cat /etc/fstab | grep ^aufs | sed -n 's/.*,br:\([^,=]*\).*/\1/p')
+EOF
+}
+
+streamcopy ()
+{
+   source=$1
+   dest=$2
+   options=$3
+   [ -d $dest ] || mkdir -p $dest
+   (cd $source; tar -cf - --exclude=".*" $options * | tar -C $dest -xf -)
+}
+
+move2internal ()
+{
+   echo -n "SD-CARD merging data to internal storage: "
+   
+   if [ -e /media/card/ssl ]; then
+      echo -n "Certificates "
+      streamcopy /media/card/ssl/ /etc/ssl/certs/
+      mv /media/card/ssl /media/card/ssl.moved
+   fi
+
+   if [ -e /media/card/sys/dss/data/metering ]; then
+      echo -n "Metering "
+      streamcopy /media/card/sys/dss/data/metering/ /media/card/sys/metering/
+      rm -rf /media/card/sys/dss/data/metering
+   fi
+
+   if [ -e /media/card/sys/dss/data ]; then
+      echo -n "dSS-Runtime "
+      streamcopy /media/card/sys/dss/data/ /usr/share/dss/data/
+      mv /media/card/sys/dss/data /media/card/sys/dss/data.moved
+   fi
+
+   if [ -e /media/card/sys/dss/add-ons ]; then
+      echo -n "dSS-Addons "
+      streamcopy /media/card/sys/dss/add-ons/ /usr/share/dss/add-ons/
+      mv /media/card/sys/dss/add-ons /media/card/sys/dss/add-ons.moved
+   fi
+
+   if [ -e /media/card/sys/add-ons ]; then
+      echo -n "Addons "
+      streamcopy /media/card/sys/add-ons/ /www/pages/add-ons/
+      mv /media/card/sys/add-ons /media/card/sys/add-ons.moved
+   fi
+
+   if [ -e /media/card/sys/dsa ]; then
+      echo -n "dSA-Database (ignored)"
+      #streamcopy /media/card/sys/dsa/ /var/lib/dsa
+      #mv /media/card/sys/dsa /media/card/sys/dsa.moved
+   fi
+   
+   echo ""
+}
+
+mount_external ()
+{
+   if [ $usb_ok -gt 0 -a $usbsize -gt $minpartsize ]; then
+      echo "SD-CARD: using external usb medium LABEL:$LABEL UUID:$UUID "
+      mount -t ext4 -o nodev,noatime,async /dev/sda1 /media/card
+   elif [ $sd_ok -gt 0 -a $sdsize -gt $minpartsize ]; then
+      echo "SD-CARD: using sd-card LABEL:$LABEL UUID:$UUID "
+      mount /media/card
+      # merge content from 'old' sd card locations to internal flash
+      move2internal
+   else
+      echo "SD-CARD - no external storage detected"
+   fi
+   sync
+}
+
+RVAL=0
+case "$1" in
+   start)
+      # filesystem check
+      test_sd
+      test_usb
+      mount_external
+
+      # check and prepare overlay mounts
+      prepare_overlay
+      mount -a -t aufs || error=$?
+      ;;
+
+   test)
+      #  if one of the old mount points is still active
+      #  the postinst hook will schedule a reboot
+      mpoints=`cat /proc/mounts  | grep ^aufs | cut -d' ' -f2`
+      for DIR in $mpoints; do
+         [ "$DIR" == "/var/lib/dsa" -o "$DIR" == "/usr/share/dss" ] && RVAL=255
+      done
+      ;;
+esac
+exit $RVAL

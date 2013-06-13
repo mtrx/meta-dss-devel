@@ -1,0 +1,9 @@
+#!/bin/sh
+
+LOGDIR=/var/log/stunnel/
+mkdir -p $LOGDIR
+chmod 750 $LOGDIR
+
+exec 2>&1
+exec svlogd2 -m -n stunnel.log $LOGDIR
+

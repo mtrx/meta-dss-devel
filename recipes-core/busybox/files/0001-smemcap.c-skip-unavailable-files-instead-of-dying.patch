@@ -1,0 +1,30 @@
+From 8ec594a498ca0d7064b03badd57b68bb167b0f90 Mon Sep 17 00:00:00 2001
+From: Christian Hitz <christian.hitz@aizo.com>
+Date: Tue, 30 Oct 2012 09:58:36 +0100
+Subject: [PATCH] smemcap.c: skip unavailable files instead of dying.
+
+Have a complete smem dump even if processes disappear during the
+smemcap run.
+---
+ procps/smemcap.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/procps/smemcap.c b/procps/smemcap.c
+index 9d1126a..9fe98ad 100644
+--- a/procps/smemcap.c
++++ b/procps/smemcap.c
+@@ -66,7 +66,10 @@ static void archivefile(const char *path)
+ 	struct stat s;
+ 
+ 	/* buffer the file */
+-	fd = xopen(path, O_RDONLY);
++	fd = open_or_warn(path, O_RDONLY);
++	if (fd < 0) {
++	  return;
++	}
+ 	do {
+ 		cur = xzalloc(sizeof(*cur));
+ 		*prev = cur;
+-- 
+1.7.10.4
+

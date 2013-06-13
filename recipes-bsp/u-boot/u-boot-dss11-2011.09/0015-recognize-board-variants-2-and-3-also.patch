@@ -1,0 +1,27 @@
+From 4396140f8845887bedf1b8a245dee740da26b158 Mon Sep 17 00:00:00 2001
+From: Christian Hitz <christian.hitz@aizo.com>
+Date: Fri, 30 Sep 2011 17:41:20 +0200
+Subject: [PATCH 15/16] recognize board variants 2 and 3 also
+
+---
+ drivers/net/macb.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/macb.c b/drivers/net/macb.c
+index 235c9e4..24948e2 100644
+--- a/drivers/net/macb.c
++++ b/drivers/net/macb.c
+@@ -498,8 +498,8 @@ static int macb_init(struct eth_device *netdev, bd_t *bd)
+ #endif
+ 		macb_phy_find(macb);
+ 		/* check for small variant */
+-		if (macb->phy_addr == 1)
+-			aizo_board_variant(1);
++		if ((macb->phy_addr > 0) && (macb->phy_addr < 4))
++			aizo_board_variant(macb->phy_addr);
+ 	}
+ 
+ 	/* on first run we only need to find the phy, on every next run, we need a link */
+-- 
+1.7.4.1
+

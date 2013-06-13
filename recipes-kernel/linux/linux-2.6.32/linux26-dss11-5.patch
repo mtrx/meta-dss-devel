@@ -1,0 +1,455 @@
+diff -urN --exclude '*.orig' linux-2.6.32.vanilla/arch/arm/mach-at91/at91sam9260_devices.c linux-2.6.32/arch/arm/mach-at91/at91sam9260_devices.c
+--- linux-2.6.32.vanilla/arch/arm/mach-at91/at91sam9260_devices.c	2009-12-03 04:51:21.000000000 +0100
++++ linux-2.6.32/arch/arm/mach-at91/at91sam9260_devices.c	2009-12-13 10:49:31.563447785 +0100
+@@ -183,8 +183,15 @@
+ 		at91_set_B_periph(AT91_PIN_PA25, 0);	/* ERX2 */
+ 		at91_set_B_periph(AT91_PIN_PA26, 0);	/* ERX3 */
+ 		at91_set_B_periph(AT91_PIN_PA27, 0);	/* ERXCK */
++#if defined(CONFIG_AIZO_DSS11)
++		at91_set_A_periph(AT91_PIN_PA23, 0);	/* TWD */
++		at91_set_A_periph(AT91_PIN_PA24, 0);	/* TWCK */
++		at91_set_B_periph(AT91_PIN_PA10, 0);	/* ETX2 */
++		at91_set_B_periph(AT91_PIN_PA11, 0);	/* ETX3 */
++#else
+ 		at91_set_B_periph(AT91_PIN_PA23, 0);	/* ETX2 */
+ 		at91_set_B_periph(AT91_PIN_PA24, 0);	/* ETX3 */
++#endif
+ 		at91_set_B_periph(AT91_PIN_PA22, 0);	/* ETXER */
+ 	}
+ 
+@@ -944,6 +951,9 @@
+ static struct atmel_uart_data uart1_data = {
+ 	.use_dma_tx	= 1,
+ 	.use_dma_rx	= 1,
++#ifdef CONFIG_AIZO_DSS11
++	.use_rs485	= 1,
++#endif
+ };
+ 
+ static u64 uart1_dmamask = DMA_BIT_MASK(32);
+@@ -965,7 +975,9 @@
+ 	at91_set_A_periph(AT91_PIN_PB6, 1);		/* TXD1 */
+ 	at91_set_A_periph(AT91_PIN_PB7, 0);		/* RXD1 */
+ 
+-	if (pins & ATMEL_UART_RTS)
++	if (uart1_data.use_rs485)
++		at91_set_A_periph(AT91_PIN_PB28, 1);	/* RTS1: low active, enable pull-up */
++	else if (pins & ATMEL_UART_RTS)
+ 		at91_set_A_periph(AT91_PIN_PB28, 0);	/* RTS1 */
+ 	if (pins & ATMEL_UART_CTS)
+ 		at91_set_A_periph(AT91_PIN_PB29, 0);	/* CTS1 */
+diff -urN --exclude '*.orig' linux-2.6.32.vanilla/arch/arm/mach-at91/board-sam9g20ek.c linux-2.6.32/arch/arm/mach-at91/board-sam9g20ek.c
+--- linux-2.6.32.vanilla/arch/arm/mach-at91/board-sam9g20ek.c	2009-12-03 04:51:21.000000000 +0100
++++ linux-2.6.32/arch/arm/mach-at91/board-sam9g20ek.c	2009-12-15 22:03:07.708950421 +0100
+@@ -27,6 +27,8 @@
+ #include <linux/gpio_keys.h>
+ #include <linux/input.h>
+ #include <linux/clk.h>
++#include <linux/gpio_keys.h>
++#include <linux/input.h>
+ 
+ #include <mach/hardware.h>
+ #include <asm/setup.h>
+@@ -58,11 +60,19 @@
+ 			   | ATMEL_UART_DTR | ATMEL_UART_DSR | ATMEL_UART_DCD
+ 			   | ATMEL_UART_RI);
+ 
+-	/* USART1 on ttyS2. (Rx, Tx, RTS, CTS) */
++#ifdef CONFIG_AIZO_DSS11
++	/* USART1 on ttyS2. (Rx, Tx, Mode RS485) */
++	at91_register_uart(AT91SAM9260_ID_US1, 2, ATMEL_UART_RS485);
++#else
++	/* USART1 on ttyS2 (Rx, Tx, CTS, RTS) */
+ 	at91_register_uart(AT91SAM9260_ID_US1, 2, ATMEL_UART_CTS | ATMEL_UART_RTS);
++#endif
++
++	/* USART2 on ttyS3 (Rx, Tx, RTS) */
++	at91_register_uart(AT91SAM9260_ID_US2, 3, ATMEL_UART_RTS);
+ 
+-	/* set serial console to ttyS0 (ie, DBGU) */
+-	at91_set_serial_console(0);
++	/* set serial console to ttyS1 (ie, DBGU) */
++	at91_set_serial_console(1);
+ }
+ 
+ static void __init ek_init_irq(void)
+@@ -115,7 +125,11 @@
+  */
+ static struct at91_eth_data __initdata ek_macb_data = {
+ 	.phy_irq_pin	= AT91_PIN_PA7,
++#ifdef CONFIG_AIZO_DSS11
++	.is_rmii	= 0,
++#else
+ 	.is_rmii	= 1,
++#endif
+ };
+ 
+ 
+@@ -123,21 +137,16 @@
+  * NAND flash
+  */
+ static struct mtd_partition __initdata ek_nand_partition[] = {
+-	{
+-		.name   = "Bootstrap",
+-		.offset = 0,
+-		.size   = 4 * SZ_1M,
+-	},
+-	{
+-		.name	= "Partition 1",
+-		.offset	= MTDPART_OFS_NXTBLK,
+-		.size	= 60 * SZ_1M,
+-	},
+-	{
+-		.name	= "Partition 2",
+-		.offset	= MTDPART_OFS_NXTBLK,
+-		.size	= MTDPART_SIZ_FULL,
+-	},
++	{	.name   = "bootstrap",		.offset = 0,					.size   = SZ_128K, },
++	{	.name	= "u-boot",			.offset	= MTDPART_OFS_NXTBLK,	.size	= 2 * SZ_128K, },
++	{	.name	= "u-boot-env",		.offset	= MTDPART_OFS_NXTBLK,	.size	= 2 * SZ_128K, },
++	{	.name	= "kernel",			.offset	= MTDPART_OFS_NXTBLK,	.size	= 2 * SZ_1M, },
++	{	.name	= "rootfsa",		.offset	= MTDPART_OFS_NXTBLK,	.size	= 104 * SZ_1M, },
++	{	.name	= "rootfsb",		.offset	= MTDPART_OFS_NXTBLK,	.size	= 104 * SZ_1M, },
++	{	.name	= "sysconfig",		.offset	= MTDPART_OFS_NXTBLK,	.size	= 4 * SZ_1M, },
++	{	.name	= "appconfig",		.offset	= MTDPART_OFS_NXTBLK,	.size	= 4 * SZ_1M, },
++	{	.name	= "secconfig",		.offset	= MTDPART_OFS_NXTBLK,	.size	= 4 * SZ_1M, },
++	{	.name	= "rescuefs",		.offset	= MTDPART_OFS_NXTBLK,	.size	= MTDPART_SIZ_FULL, },
+ };
+ 
+ static struct mtd_partition * __init nand_partitions(int size, int *num_partitions)
+@@ -207,16 +216,20 @@
+  * LEDs
+  */
+ static struct gpio_led ek_leds[] = {
+-	{	/* "bottom" led, green, userled1 to be defined */
+-		.name			= "ds5",
+-		.gpio			= AT91_PIN_PA6,
+-		.active_low		= 1,
++	{	/* green */
++		.name			= "green",
++		.gpio			= AT91_PIN_PB0,
+ 		.default_trigger	= "none",
+ 	},
+-	{	/* "power" led, yellow */
+-		.name			= "ds1",
+-		.gpio			= AT91_PIN_PA9,
+-		.default_trigger	= "heartbeat",
++	{	/* red */
++		.name			= "red",
++		.gpio			= AT91_PIN_PB1,
++		.default_trigger	= "none",
++	},
++	{	/* blue */
++		.name			= "blue",
++		.gpio			= AT91_PIN_PB3,
++		.default_trigger	= "none",
+ 	}
+ };
+ 
+@@ -227,16 +240,16 @@
+ #if defined(CONFIG_KEYBOARD_GPIO) || defined(CONFIG_KEYBOARD_GPIO_MODULE)
+ static struct gpio_keys_button ek_buttons[] = {
+ 	{
+-		.gpio		= AT91_PIN_PA30,
+-		.code		= BTN_3,
+-		.desc		= "Button 3",
++		.gpio		= AT91_PIN_PB2,
++		.code		= BTN_1,
++		.desc		= "Button 1",
+ 		.active_low	= 1,
+ 		.wakeup		= 1,
+ 	},
+ 	{
+-		.gpio		= AT91_PIN_PA31,
+-		.code		= BTN_4,
+-		.desc		= "Button 4",
++		.gpio		= AT91_PIN_PB21,
++		.code		= BTN_2,
++		.desc		= "Button 2",
+ 		.active_low	= 1,
+ 		.wakeup		= 1,
+ 	}
+@@ -258,10 +271,10 @@
+ 
+ static void __init ek_add_device_buttons(void)
+ {
+-	at91_set_gpio_input(AT91_PIN_PA30, 1);	/* btn3 */
+-	at91_set_deglitch(AT91_PIN_PA30, 1);
+-	at91_set_gpio_input(AT91_PIN_PA31, 1);	/* btn4 */
+-	at91_set_deglitch(AT91_PIN_PA31, 1);
++	at91_set_gpio_input(AT91_PIN_PB2, 1);	/* btn3 */
++	at91_set_deglitch(AT91_PIN_PB2, 1);
++	at91_set_gpio_input(AT91_PIN_PB21, 1);	/* btn4 */
++	at91_set_deglitch(AT91_PIN_PB21, 1);
+ 
+ 	platform_device_register(&ek_button_device);
+ }
+@@ -274,6 +287,9 @@
+ 	{
+ 		I2C_BOARD_INFO("24c512", 0x50),
+ 		I2C_BOARD_INFO("wm8731", 0x1b),
++#ifdef CONFIG_AIZO_DSS11
++		I2C_BOARD_INFO("rs5c372a", 0x32),
++#endif
+ 	},
+ };
+ 
+diff -urN --exclude '*.orig' linux-2.6.32.vanilla/arch/arm/mach-at91/include/mach/board.h linux-2.6.32/arch/arm/mach-at91/include/mach/board.h
+--- linux-2.6.32.vanilla/arch/arm/mach-at91/include/mach/board.h	2009-12-03 04:51:21.000000000 +0100
++++ linux-2.6.32/arch/arm/mach-at91/include/mach/board.h	2009-12-13 09:12:18.085883695 +0100
+@@ -129,6 +129,7 @@
+ #define ATMEL_UART_DTR	0x08
+ #define ATMEL_UART_DCD	0x10
+ #define ATMEL_UART_RI	0x20
++#define ATMEL_UART_RS485 0x40
+ 
+ extern void __init at91_register_uart(unsigned id, unsigned portnr, unsigned pins);
+ extern void __init at91_set_serial_console(unsigned portnr);
+@@ -144,6 +145,7 @@
+ struct atmel_uart_data {
+ 	short		use_dma_tx;	/* use transmit DMA? */
+ 	short		use_dma_rx;	/* use receive DMA? */
++	u8			use_rs485; /* enable rs485 mode */
+ 	void __iomem	*regs;		/* virtual base address, if any */
+ };
+ extern void __init at91_add_device_serial(void);
+diff -urN --exclude '*.orig' linux-2.6.32.vanilla/arch/arm/mach-at91/Kconfig linux-2.6.32/arch/arm/mach-at91/Kconfig
+--- linux-2.6.32.vanilla/arch/arm/mach-at91/Kconfig	2009-12-03 04:51:21.000000000 +0100
++++ linux-2.6.32/arch/arm/mach-at91/Kconfig	2009-12-10 16:00:24.820666381 +0100
+@@ -318,6 +318,12 @@
+ 	  Select this if you are using Atmel's AT91SAM9G20-EK Evaluation Kit
+ 	  that embeds only one SD/MMC slot.
+ 
++config AIZO_DSS11
++    bool "aizo dSS11 AT91SAM9G20 Platform"
++    depends on MACH_AT91SAM9G20EK
++    help
++      Select this for the aizo dSS11 Board.
++	
+ config MACH_AT91SAM9G20EK_2MMC
+ 	bool "Atmel AT91SAM9G20-EK Evaluation Kit with 2 SD/MMC Slots"
+ 	depends on ARCH_AT91SAM9G20
+diff -urN --exclude '*.orig' linux-2.6.32.vanilla/drivers/mmc/core/mmc_ops.c linux-2.6.32/drivers/mmc/core/mmc_ops.c
+--- linux-2.6.32.vanilla/drivers/mmc/core/mmc_ops.c	2009-12-03 04:51:21.000000000 +0100
++++ linux-2.6.32/drivers/mmc/core/mmc_ops.c	2009-12-06 11:51:06.000000000 +0100
+@@ -460,4 +460,5 @@
+ 
+ 	return 0;
+ }
++EXPORT_SYMBOL(mmc_send_status);
+ 
+diff -urN --exclude '*.orig' linux-2.6.32.vanilla/drivers/mmc/host/at91_mci.c linux-2.6.32/drivers/mmc/host/at91_mci.c
+--- linux-2.6.32.vanilla/drivers/mmc/host/at91_mci.c	2009-12-03 04:51:21.000000000 +0100
++++ linux-2.6.32/drivers/mmc/host/at91_mci.c	2009-12-06 11:51:06.000000000 +0100
+@@ -5,6 +5,9 @@
+  *
+  *  Copyright (C) 2006 Malcolm Noyes
+  *
++ *  Copyright (C) 2009 Fabian Godehardt, emlixGmbH
++ *  Added some code to auto detect the card without a card-detect pin.
++ *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 as
+  * published by the Free Software Foundation.
+@@ -64,9 +67,11 @@
+ #include <linux/err.h>
+ #include <linux/dma-mapping.h>
+ #include <linux/clk.h>
++#include <linux/kthread.h>
+ #include <linux/atmel_pdc.h>
+ 
+ #include <linux/mmc/host.h>
++#include <linux/mmc/core.h>
+ 
+ #include <asm/io.h>
+ #include <asm/irq.h>
+@@ -88,6 +93,9 @@
+ #define at91_mci_read(host, reg)	__raw_readl((host)->baseaddr + (reg))
+ #define at91_mci_write(host, reg, val)	__raw_writel((val), (host)->baseaddr + (reg))
+ 
++static struct task_struct *at91_cd_thread; /* thread for cyclical carddetect signal */
++
++extern int mmc_send_status(struct mmc_card *card, u32 *status);
+ 
+ /*
+  * Low level type for this driver
+@@ -971,6 +979,56 @@
+ 
+ }
+ 
++static int at91_cd_thread_code(void *data)
++{
++	struct at91mci_host *host = data;
++	struct mmc_host *mmc = host->mmc;
++	int card_present = 0, err = 0;
++	unsigned long timeout;
++
++	for (;;) {
++		if (host->present != 1)
++			mmc_detect_change(host->mmc, 0);
++
++		if (mmc->card) {
++			mmc_claim_host(mmc);
++			err = mmc_send_status(mmc->card, NULL);
++			mmc_release_host(mmc);
++			if (err) {
++				/* no card inserted */
++				card_present = 0;
++			} else {
++				/* card inserted*/
++				card_present = 1;
++			}
++			if (card_present != host->present) {
++				if (host->present && !card_present)
++					mmc_detect_change(host->mmc, msecs_to_jiffies(1));
++				host->present = card_present;
++				pr_debug("%s: card %s\n", mmc_hostname(host->mmc),
++					card_present ? "inserted" : "removed");
++				if (!card_present) {
++					pr_debug("****** Resetting SD-card bus width ******\n");
++					at91_mci_write(host, AT91_MCI_SDCR, at91_mci_read(host, AT91_MCI_SDCR) & ~AT91_MCI_SDCBUS);
++				}
++			}
++		} /* else do nothing */
++
++		/* add thread again */
++		set_current_state(TASK_INTERRUPTIBLE);
++		timeout = HZ/2;
++		schedule_timeout_interruptible(timeout);
++		set_current_state(TASK_RUNNING);
++		if (kthread_should_stop()) {
++			pr_debug("at91_mci: card_detect thread got signal, break\n");
++			break;
++		}
++	}
++
++	return 0;
++}
++
++
+ static const struct mmc_host_ops at91_mci_ops = {
+ 	.request	= at91_mci_request,
+ 	.set_ios	= at91_mci_set_ios,
+@@ -1112,6 +1170,16 @@
+ 			dev_warn(&pdev->dev, "request MMC detect irq failed\n");
+ 		else
+ 			device_init_wakeup(&pdev->dev, 1);
++	} else {
++		/* try to detect it manually */
++		at91_cd_thread = kthread_run(at91_cd_thread_code, host, "card_detect");
++		if (IS_ERR(at91_cd_thread)) {
++			ret = PTR_ERR(at91_cd_thread);
++			at91_cd_thread = NULL;
++			printk(DRIVER_NAME "Cannot create card_detect thread\n");
++			goto fail0;
++		}
++		printk(KERN_INFO DRIVER_NAME ": card_detect thread activated\n");
+ 	}
+ 
+ 	pr_debug("Added MCI driver\n");
+@@ -1159,6 +1227,8 @@
+ 			free_irq(gpio_to_irq(host->board->det_pin), host);
+ 		device_init_wakeup(&pdev->dev, 0);
+ 		gpio_free(host->board->det_pin);
++	} else {
++		kthread_stop(at91_cd_thread);
+ 	}
+ 
+ 	at91_mci_disable(host);
+diff -urN --exclude '*.orig' linux-2.6.32.vanilla/drivers/serial/atmel_serial.c linux-2.6.32/drivers/serial/atmel_serial.c
+--- linux-2.6.32.vanilla/drivers/serial/atmel_serial.c	2009-12-03 04:51:21.000000000 +0100
++++ linux-2.6.32/drivers/serial/atmel_serial.c	2009-12-15 21:56:27.653488567 +0100
+@@ -147,6 +147,8 @@
+ 	unsigned int		irq_status_prev;
+ 
+ 	struct circ_buf		rx_ring;
++
++	int			use_rs485;
+ };
+ 
+ static struct atmel_uart_port atmel_ports[ATMEL_MAX_UART];
+@@ -218,10 +220,13 @@
+ 	}
+ #endif
+ 
+-	if (mctrl & TIOCM_RTS)
+-		control |= ATMEL_US_RTSEN;
+-	else
+-		control |= ATMEL_US_RTSDIS;
++	/* Do not touch RTS signal for rs485 mode */
++	if (! to_atmel_uart_port(port)->use_rs485) {
++		if (mctrl & TIOCM_RTS)
++			control |= ATMEL_US_RTSEN;
++		else
++			control |= ATMEL_US_RTSDIS;
++	}
+ 
+ 	if (mctrl & TIOCM_DTR)
+ 		control |= ATMEL_US_DTREN;
+@@ -1067,7 +1072,9 @@
+ 		mode |= ATMEL_US_PAR_NONE;
+ 
+ 	/* hardware handshake (RTS/CTS) */
+-	if (termios->c_cflag & CRTSCTS)
++	if (to_atmel_uart_port(port)->use_rs485)
++		mode |= ATMEL_US_USMODE_RS485;
++	else if (termios->c_cflag & CRTSCTS)
+ 		mode |= ATMEL_US_USMODE_HWHS;
+ 	else
+ 		mode |= ATMEL_US_USMODE_NORMAL;
+@@ -1279,6 +1286,11 @@
+ 	atmel_port->use_dma_tx = data->use_dma_tx;
+ 	if (atmel_use_dma_tx(port))
+ 		port->fifosize = PDC_BUFFER_SIZE;
++
++	if (data->use_rs485)
++		atmel_port->use_rs485 = 1;
++	else
++		atmel_port->use_rs485 = 0;
+ }
+ 
+ /*
+@@ -1565,6 +1577,17 @@
+ 	device_init_wakeup(&pdev->dev, 1);
+ 	platform_set_drvdata(pdev, port);
+ 
++	if (port->use_rs485) {
++		printk("enable RS485 on port %d...", pdev->id);
++		clk_enable(port->clk);			/* enable uart clock */
++		ret = UART_GET_MR(&port->uart);
++		ret &= ~ATMEL_US_USMODE;
++		ret |= ATMEL_US_USMODE_RS485;
++		UART_PUT_MR(&port->uart, ret);	/* force rs485 mode */
++		//clk_disable(port->clk);			/* disable uart clock again */
++		printk("done\n");
++	}
++
+ 	return 0;
+ 
+ err_add_port:
+--- linux-2.6.32.vanilla/arch/arm/mach-at91/board-sam9g20ek.c.orig	2010-06-21 14:27:48.000000000 +0200
++++ linux-2.6.32/arch/arm/mach-at91/board-sam9g20ek.c	2010-06-21 14:29:34.000000000 +0200
+@@ -137,16 +137,14 @@
+  * NAND flash
+  */
+ static struct mtd_partition __initdata ek_nand_partition[] = {
+-	{	.name   = "bootstrap",		.offset = 0,					.size   = SZ_128K, },
+-	{	.name	= "u-boot",			.offset	= MTDPART_OFS_NXTBLK,	.size	= 2 * SZ_128K, },
++	{	.name   = "bootstrap",		.offset = 0,			.size   = SZ_128K, },
++	{	.name	= "u-boot",		.offset	= MTDPART_OFS_NXTBLK,	.size	= 2 * SZ_128K, },
+ 	{	.name	= "u-boot-env",		.offset	= MTDPART_OFS_NXTBLK,	.size	= 2 * SZ_128K, },
+-	{	.name	= "kernel",			.offset	= MTDPART_OFS_NXTBLK,	.size	= 2 * SZ_1M, },
+-	{	.name	= "rootfsa",		.offset	= MTDPART_OFS_NXTBLK,	.size	= 104 * SZ_1M, },
+-	{	.name	= "rootfsb",		.offset	= MTDPART_OFS_NXTBLK,	.size	= 104 * SZ_1M, },
+-	{	.name	= "sysconfig",		.offset	= MTDPART_OFS_NXTBLK,	.size	= 4 * SZ_1M, },
+-	{	.name	= "appconfig",		.offset	= MTDPART_OFS_NXTBLK,	.size	= 4 * SZ_1M, },
+-	{	.name	= "secconfig",		.offset	= MTDPART_OFS_NXTBLK,	.size	= 4 * SZ_1M, },
+-	{	.name	= "rescuefs",		.offset	= MTDPART_OFS_NXTBLK,	.size	= MTDPART_SIZ_FULL, },
++	{	.name	= "kernel-rescue",	.offset	= MTDPART_OFS_NXTBLK,	.size	= 2 * SZ_1M, },
++	{	.name	= "kernel-prod",	.offset	= MTDPART_OFS_NXTBLK,	.size	= 2 * SZ_1M, },
++	{	.name	= "rootfs-rescue",	.offset	= MTDPART_OFS_NXTBLK,	.size	= 32 * SZ_1M, },
++	{	.name	= "rootfs-prod",	.offset	= MTDPART_OFS_NXTBLK,	.size	= 200 * SZ_1M, },
++	{	.name	= "config",		.offset	= MTDPART_OFS_NXTBLK,	.size	= MTDPART_SIZ_FULL, },
+ };
+ 
+ static struct mtd_partition * __init nand_partitions(int size, int *num_partitions)

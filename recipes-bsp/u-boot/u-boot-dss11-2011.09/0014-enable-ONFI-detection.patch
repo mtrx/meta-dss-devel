@@ -1,0 +1,24 @@
+From 027612f11618c2355dbe9f877b0e0197bb7d3ba1 Mon Sep 17 00:00:00 2001
+From: Christian Hitz <christian.hitz@aizo.com>
+Date: Fri, 30 Sep 2011 11:11:23 +0200
+Subject: [PATCH 14/16] enable ONFI detection
+
+---
+ include/configs/digitalSTROM.h |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/include/configs/digitalSTROM.h b/include/configs/digitalSTROM.h
+index 944d718..279651d 100644
+--- a/include/configs/digitalSTROM.h
++++ b/include/configs/digitalSTROM.h
+@@ -195,6 +195,7 @@
+ #define CONFIG_SYS_NAND_READY_PIN	AT91_PIN_PC13
+ #define CONFIG_NAND_ECC_BCH
+ #define CONFIG_BCH
++#define CONFIG_SYS_NAND_ONFI_DETECTION
+ #endif
+ 
+ #define CONFIG_JFFS2_CMDLINE	1
+-- 
+1.7.4.1
+

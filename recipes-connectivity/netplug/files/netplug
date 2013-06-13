@@ -1,0 +1,55 @@
+#!/bin/sh
+#
+# netplug - policy agent for netplugd
+#
+# Copyright 2003 Key Research, Inc.
+#
+# Adapted for dss11/OE by Johannes Winkelmann
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License, version 2, as
+# published by the Free Software Foundation.  You are forbidden from
+# redistributing or modifying it under the terms of any other license,
+# including other versions of the GNU General Public License.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+
+
+PATH=/usr/bin:/bin:/usr/sbin:/sbin
+export PATH
+
+dev="$1"
+action="$2"
+
+case "$action" in
+in)
+    /sbin/ifup $dev
+    ;;
+out)
+    /sbin/ifdown $dev
+
+    # we only detect link changes if the device is up; unfortunately, netplugd
+    # doesn't like having the interface up'ed during 'out', so we have to
+    # stop it temporarily :-(
+    /etc/init.d/netplugd stop
+    ifconfig $dev up
+    /etc/init.d/netplugd start
+    ;;
+probe)
+    ifconfig $dev up >/dev/null 2>&1
+    ;;
+*)
+    echo "I have been called with a funny action of '%s'!" 1>&2
+    exit 1
+    ;;
+esac
+
+
+for s in /etc/netplug.d/* ; do
+        if [ "$s" != "/etc/netplug.d/netplug" ]; then
+                $s $dev $action
+        fi
+done

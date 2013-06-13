@@ -1,0 +1,13 @@
+#! /bin/sh
+
+# restart upnp beacon if we are in static ip mode, otherwise the udhcp script
+# will take care of it
+
+INTERFACE_FILE="/etc/network/interfaces"
+
+NETMODE=`grep "iface eth0 inet" $INTERFACE_FILE | cut -d " " -f 4`
+if [[ "$NETMODE" == "static" ]]; then
+    /etc/init.d/upnpbeacon restart
+fi
+
+exit 0

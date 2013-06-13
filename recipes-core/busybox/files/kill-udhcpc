@@ -1,0 +1,7 @@
+#!/bin/sh
+# kill dhcp client when eth0 interface is brought down
+if [ -f /var/run/udhcpc.eth0.pid ]; then
+   kill `cat /var/run/udhcpc.eth0.pid` > /dev/null 2>&1
+fi
+
+exit 0

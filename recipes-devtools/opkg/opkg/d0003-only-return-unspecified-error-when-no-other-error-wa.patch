@@ -1,0 +1,57 @@
+From c99013ee2b949b6c46d219df69e6261162f70d50 Mon Sep 17 00:00:00 2001
+From: Christian Hitz <christian.hitz@aizo.com>
+Date: Tue, 13 Dec 2011 16:52:48 +0100
+Subject: [PATCH 3/3] only return unspecified error when no other error was
+ reported
+
+---
+ libopkg/opkg_install.c |    1 +
+ src/opkg-cl.c          |    3 ++-
+ tests/libopkg_test.c   |    3 ++-
+ 3 files changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/libopkg/opkg_install.c b/libopkg/opkg_install.c
+index 060f5bf..cc302e7 100644
+--- a/libopkg/opkg_install.c
++++ b/libopkg/opkg_install.c
+@@ -1524,5 +1524,6 @@ pkg_is_hosed:
+ 	  sigprocmask(SIG_UNBLOCK, &newset, &oldset);
+ 
+           pkg_vec_free (replacees);
++          opkg_error_cause(ERROR_PACKAGE_NOT_INSTALLED);
+ 	  return -1;
+ }
+diff --git a/src/opkg-cl.c b/src/opkg-cl.c
+index e0b9949..521d9ad 100644
+--- a/src/opkg-cl.c
++++ b/src/opkg-cl.c
+@@ -387,7 +387,8 @@ err0:
+ 	free_error_list();
+ 
+ 	if (err) {
+-	    err = 1 | opkg_get_error_causes();
++	    int error_causes = opkg_get_error_causes();
++	    err = error_causes ? error_causes : ERROR_UNSPECIFIED;
+ 	}
+ 
+ 	return err;
+diff --git a/tests/libopkg_test.c b/tests/libopkg_test.c
+index 0dcc525..822ab9c 100644
+--- a/tests/libopkg_test.c
++++ b/tests/libopkg_test.c
+@@ -154,10 +154,11 @@ main (int argc, char **argv)
+   setenv("OFFLINE_ROOT", "/tmp", 0);
+ 
+   if (opkg_new ()) {
++	  int err = opkg_get_error_causes();
+ 	  printf("opkg_new() failed. This sucks.\n");
+ 	  print_error_list();
+ 	  free_error_list();
+-	  return 1 | opkg_get_error_causes();
++	  return err ? err : ERROR_UNSPECIFIED;
+   }
+ 
+   char *cache;
+-- 
+1.7.5.4
+

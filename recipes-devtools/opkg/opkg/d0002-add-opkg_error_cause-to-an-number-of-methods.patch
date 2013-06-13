@@ -1,0 +1,219 @@
+From ef38a8a9e802c8bd58666847956f21d55e358f6c Mon Sep 17 00:00:00 2001
+From: Christian Hitz <christian.hitz@aizo.com>
+Date: Thu, 8 Dec 2011 09:56:37 +0100
+Subject: [PATCH 2/2] add opkg_error_cause() to an number of methods
+
+---
+ libopkg/opkg.c           |    7 +++++++
+ libopkg/opkg_cmd.c       |    4 ++++
+ libopkg/opkg_configure.c |    1 +
+ libopkg/opkg_download.c  |    3 +++
+ libopkg/opkg_install.c   |    3 +++
+ libopkg/opkg_remove.c    |    1 +
+ src/opkg-cl.c            |    4 ++++
+ tests/libopkg_test.c     |    3 ++-
+ 8 files changed, 25 insertions(+), 1 deletions(-)
+
+diff --git a/libopkg/opkg.c b/libopkg/opkg.c
+index 92f61f4..7c0b4b0 100644
+--- a/libopkg/opkg.c
++++ b/libopkg/opkg.c
+@@ -262,12 +262,14 @@ opkg_install_package(const char *package_name,
+ 	if (old) {
+ 		opkg_msg(ERROR, "Package %s is already installed\n",
+ 				package_name);
++		opkg_error_cause(ERROR_PACKAGE_ALREADY_INSTALLED);
+ 		return -1;
+ 	}
+ 
+ 	new = pkg_hash_fetch_best_installation_candidate_by_name(package_name);
+ 	if (!new) {
+ 		opkg_msg(ERROR, "Couldn't find package %s\n", package_name);
++		opkg_error_cause(ERROR_PACKAGE_NOT_FOUND);
+ 		return -1;
+ 	}
+ 
+@@ -295,6 +297,7 @@ opkg_install_package(const char *package_name,
+ 		free(unresolved);
+ 		pkg_vec_free(deps);
+ 		opkg_message(ERROR, "\n");
++		opkg_error_cause(ERROR_DEPENDENCY_FAILED);
+ 		return -1;
+ 	}
+ 
+@@ -317,6 +320,7 @@ opkg_install_package(const char *package_name,
+ 		if (pkg->src == NULL) {
+ 			opkg_msg(ERROR, "Package %s not available from any "
+ 					"configured src\n", package_name);
++			opkg_error_cause(ERROR_PACKAGE_NOT_AVAILABLE);
+ 			return -1;
+ 		}
+ 
+@@ -404,6 +408,7 @@ opkg_remove_package(const char *package_name,
+ 
+ 	if (pkg == NULL || pkg->state_status == SS_NOT_INSTALLED) {
+ 		opkg_msg(ERROR, "Package %s not installed\n", package_name);
++		opkg_error_cause(ERROR_PACKAGE_NOT_INSTALLED);
+ 		return -1;
+ 	}
+ 
+@@ -454,6 +459,7 @@ opkg_upgrade_package(const char *package_name,
+ 
+ 	if (!pkg) {
+ 		opkg_msg(ERROR, "Package %s not installed\n", package_name);
++		opkg_error_cause(ERROR_PACKAGE_NOT_INSTALLED);
+ 		return -1;
+ 	}
+ 
+@@ -671,6 +677,7 @@ opkg_update_package_lists(opkg_progress_callback_t progress_callback,
+ 					opkg_msg(ERROR, "Signature check "
+ 							"failed for %s",
+ 							list_file_name);
++					opkg_error_cause(ERROR_GPG_ERROR);
+ 				}
+ 			}
+ 			free(sig_file_name);
+diff --git a/libopkg/opkg_cmd.c b/libopkg/opkg_cmd.c
+index 11e7867..7c72c0b 100644
+--- a/libopkg/opkg_cmd.c
++++ b/libopkg/opkg_cmd.c
+@@ -822,10 +822,12 @@ opkg_remove_cmd(int argc, char **argv)
+ 
+             if (pkg_to_remove == NULL) {
+ 	         opkg_msg(ERROR, "Package %s is not installed.\n", pkg->name);
++	         opkg_error_cause(ERROR_PACKAGE_NOT_INSTALLED);
+ 	         continue;
+             }
+             if (pkg->state_status == SS_NOT_INSTALLED) {
+ 	         opkg_msg(ERROR, "Package %s not installed.\n", pkg->name);
++	         opkg_error_cause(ERROR_PACKAGE_NOT_INSTALLED);
+                  continue;
+             }
+ 
+@@ -864,6 +866,7 @@ opkg_flag_cmd(int argc, char **argv)
+ 
+ 	  if (pkg == NULL) {
+ 	       opkg_msg(ERROR, "Package %s is not installed.\n", argv[i]);
++	       opkg_error_cause(ERROR_PACKAGE_NOT_INSTALLED);
+ 	       continue;
+ 	  }
+           if (( strcmp(flags,"hold")==0)||( strcmp(flags,"noprune")==0)||
+@@ -903,6 +906,7 @@ opkg_files_cmd(int argc, char **argv)
+      pkg = pkg_hash_fetch_installed_by_name(argv[0]);
+      if (pkg == NULL) {
+ 	  opkg_msg(ERROR, "Package %s not installed.\n", argv[0]);
++	  opkg_error_cause(ERROR_PACKAGE_NOT_INSTALLED);
+ 	  return 0;
+      }
+ 
+diff --git a/libopkg/opkg_configure.c b/libopkg/opkg_configure.c
+index 719da5a..f06ac40 100644
+--- a/libopkg/opkg_configure.c
++++ b/libopkg/opkg_configure.c
+@@ -36,6 +36,7 @@ opkg_configure(pkg_t *pkg)
+     err = pkg_run_script(pkg, "postinst", "configure");
+     if (err) {
+ 	opkg_msg(ERROR, "%s.postinst returned %d.\n", pkg->name, err);
++	opkg_error_cause(ERROR_POSTINSTALL_SCRIPT);
+ 	return err;
+     }
+ 
+diff --git a/libopkg/opkg_download.c b/libopkg/opkg_download.c
+index e53e64e..f12011b 100644
+--- a/libopkg/opkg_download.c
++++ b/libopkg/opkg_download.c
+@@ -144,6 +144,7 @@ opkg_download(const char *src, const char *dest_file_name,
+ 	    curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &error_code);
+ 	    opkg_msg(hide_error?DEBUG2:ERROR, "Failed to download %s: %s.\n",
+ 		    src, curl_easy_strerror(res));
++	    opkg_error_cause(ERROR_DOWNLOAD_FAILED);
+ 	    free(tmp_file_location);
+ 	    return -1;
+ 	}
+@@ -174,6 +175,7 @@ opkg_download(const char *src, const char *dest_file_name,
+ 
+       if (res) {
+ 	opkg_msg(ERROR, "Failed to download %s, wget returned %d.\n", src, res);
++	opkg_error_cause(ERROR_DOWNLOAD_FAILED);
+ 	free(tmp_file_location);
+ 	return -1;
+       }
+@@ -255,6 +257,7 @@ opkg_download_pkg(pkg_t *pkg, const char *dir)
+     if (pkg->src == NULL) {
+ 	opkg_msg(ERROR, "Package %s is not available from any configured src.\n",
+ 		pkg->name);
++	opkg_error_cause(ERROR_PACKAGE_NOT_AVAILABLE);
+ 	return -1;
+     }
+     if (pkg->filename == NULL) {
+diff --git a/libopkg/opkg_install.c b/libopkg/opkg_install.c
+index 74a2ce1..060f5bf 100644
+--- a/libopkg/opkg_install.c
++++ b/libopkg/opkg_install.c
+@@ -1143,6 +1143,7 @@ opkg_install_by_name(const char *pkg_name)
+      new = pkg_hash_fetch_best_installation_candidate_by_name(pkg_name);
+      if (new == NULL) {
+ 	opkg_msg(NOTICE, "Unknown package '%s'.\n", pkg_name);
++	opkg_error_cause(ERROR_PACKAGE_NOT_FOUND);
+ 	return -1;
+      }
+ 
+@@ -1324,6 +1325,7 @@ opkg_install_pkg(pkg_t *pkg, int from_upgrade)
+ 			"Either the opkg or the package index are corrupt. "
+ 			"Try 'opkg update'.\n",
+ 			pkg->name);
++              opkg_error_cause(ERROR_MD5_ERROR);
+               free(file_md5);
+               return -1;
+          }
+@@ -1342,6 +1344,7 @@ opkg_install_pkg(pkg_t *pkg, int from_upgrade)
+ 			"Either the opkg or the package index are corrupt. "
+ 			"Try 'opkg update'.\n",
+ 			pkg->name);
++              opkg_error_cause(ERROR_SHA256_ERROR);
+               free(file_sha256);
+               return -1;
+          }
+diff --git a/libopkg/opkg_remove.c b/libopkg/opkg_remove.c
+index 5f4219b..e5ffc81 100644
+--- a/libopkg/opkg_remove.c
++++ b/libopkg/opkg_remove.c
+@@ -299,6 +299,7 @@ opkg_remove_pkg(pkg_t *pkg, int from_upgrade)
+              opkg_msg(NOTICE, "You can force removal of packages with failed "
+                               "prerm scripts with the option: \n"
+                               "\t--force-remove\n");
++             opkg_error_cause(ERROR_PRERM_SCRIPT);
+              return -1;
+          }
+      }
+diff --git a/src/opkg-cl.c b/src/opkg-cl.c
+index 1b927e5..e0b9949 100644
+--- a/src/opkg-cl.c
++++ b/src/opkg-cl.c
+@@ -386,5 +386,9 @@ err0:
+ 	print_error_list();
+ 	free_error_list();
+ 
++	if (err) {
++	    err = 1 | opkg_get_error_causes();
++	}
++
+ 	return err;
+ }
+diff --git a/tests/libopkg_test.c b/tests/libopkg_test.c
+index 21f100e..0dcc525 100644
+--- a/tests/libopkg_test.c
++++ b/tests/libopkg_test.c
+@@ -156,7 +156,8 @@ main (int argc, char **argv)
+   if (opkg_new ()) {
+ 	  printf("opkg_new() failed. This sucks.\n");
+ 	  print_error_list();
+-	  return 1;
++	  free_error_list();
++	  return 1 | opkg_get_error_causes();
+   }
+ 
+   char *cache;
+-- 
+1.7.5.4
+

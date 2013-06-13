@@ -1,0 +1,8 @@
+/var/log/dss11-websetup/*log {
+    monthly
+    rotate 4
+    size 512k
+    missingok
+    notifempty
+}
+

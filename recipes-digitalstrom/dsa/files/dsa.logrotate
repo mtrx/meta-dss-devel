@@ -1,0 +1,31 @@
+/var/log/dsa/dsa*log {
+    rotate 8
+    size 1M
+    missingok
+    notifempty
+    sharedscripts
+    postrotate
+        PID_DSA=`pidof -s dsa`
+        if [ -n "$PID_DSA" ]; then
+            kill -SIGUSR1 $PID_DSA > /dev/null 2>&1
+        fi
+        PID_LOG=`cat /etc/runit/dsa/log/supervise/pid`
+        if [ -n "$PID_LOG" ]; then
+           kill -HUP $PID_LOG > /dev/null 2>&1
+        fi
+    endscript
+}
+
+/var/log/dsa/dsid*log {
+    rotate 2
+    size 1M
+    missingok
+    notifempty
+    sharedscripts
+    postrotate
+        PID_DSA=`pidof -s dsa`
+        if [ -n "$PID_DSA" ]; then
+            kill -SIGUSR1 $PID_DSA > /dev/null 2>&1
+        fi
+    endscript
+}

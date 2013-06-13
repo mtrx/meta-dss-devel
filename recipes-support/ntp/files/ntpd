@@ -1,0 +1,87 @@
+#! /bin/sh
+#
+# ntpd	init.d script for ntpdc from ntp.isc.org
+test -x /usr/bin/ntpd -a -r /etc/ntp.conf || exit 0
+# rcS contains TICKADJ
+test -r /etc/default/rcS && . /etc/default/rcS
+
+if [[ -f /etc/default/ntpclient ]]; then
+    . /etc/default/ntpclient
+fi
+
+if [[ -f /etc/default/ntpdate ]]; then
+	. /etc/default/ntpdate
+else
+	NTPSERVERS="pool.ntp.org"
+fi
+
+USER_NTPSERVER=
+if [[ -s /etc/ntp.user ]]; then
+    USER_NTPSERVER=`grep server /etc/ntp.user 2>/dev/null | head -n 1 | cut -d ' ' -f 2`
+fi
+
+NTPSERVERS="$USER_NTPSERVER $NTPSERVERS"
+
+# Functions to do individual actions
+settick(){
+  	# If TICKADJ is set we *must* adjust it before we start, because the
+	# driftfile relies on the correct setting
+	test -n "$TICKADJ" -a -x /usr/bin/tickadj && {
+		echo -n "Setting tick to $TICKADJ: "
+		/usr/bin/tickadj "$TICKADJ"
+		echo "done"
+	}
+}
+startdaemon(){
+	# The -g option allows ntpd to step the time to correct it just
+	# once.  The daemon will exit if the clock drifts too much after
+	# this.  If ntpd seems to disappear after a while assume TICKADJ
+	# above is set to a totally incorrect value.
+	echo -n "Starting ntpd: "
+	if [[ -x /usr/bin/ntpdate ]]; then
+		/usr/bin/ntpdate -s -b $NTPSERVERS 2>/dev/null
+		/sbin/hwclock -f /dev/rtc1 --systohc
+	fi
+	start-stop-daemon --start -x /usr/bin/ntpd -- -p /var/run/ntp.pid "$@"
+	echo "done"
+}
+stopdaemon(){
+	echo -n "Stopping ntpd: "
+	start-stop-daemon --stop -p /var/run/ntp.pid
+	echo "done"
+}
+
+case "$1" in
+  start)
+    [[ "$ENABLED" == "yes" ]] || exit 0
+  	settick
+	startdaemon -g -x
+	;;
+  stop)
+  	stopdaemon
+	;;
+  force-reload)
+  	stopdaemon
+    [[ "$ENABLED" == "yes" ]] || exit 0
+  	settick
+	startdaemon -g -x
+	;;
+  restart)
+  	# Don't reset the tick here
+	stopdaemon
+    [[ "$ENABLED" == "yes" ]] || exit 0
+	startdaemon -g -x
+	;;
+  reload)
+  	# Must do this by hand, but don't do -g
+	stopdaemon
+    [[ "$ENABLED" == "yes" ]] || exit 0
+	startdaemon
+	;;
+  *)
+	echo "Usage: ntpd { start | stop | restart | reload }" >&2
+	exit 1
+	;;
+esac
+
+exit 0

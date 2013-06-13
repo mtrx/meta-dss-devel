@@ -1,0 +1,19 @@
+--- trunk/libopkg/pkg.c	2012-01-27 23:43:10.754930410 +0100
++++ /tmp/trunk/libopkg/pkg.c	2012-01-27 23:42:05.000000000 +0100
+@@ -86,6 +86,7 @@
+      pkg->homepage = NULL;
+      pkg->section = NULL;
+      pkg->description = NULL;
++     pkg->tags = NULL;
+      pkg->state_want = SW_UNKNOWN;
+      pkg->state_flag = SF_OK;
+      pkg->state_status = SS_NOT_INSTALLED;
+@@ -360,6 +361,8 @@
+ 	  oldpkg->homepage = xstrdup(newpkg->homepage);
+      if(!oldpkg->description)
+ 	  oldpkg->description = xstrdup(newpkg->description);
++     if(!oldpkg->tags)
++	  oldpkg->tags = xstrdup(newpkg->tags);
+ 
+      if (!oldpkg->depends_count && !oldpkg->pre_depends_count && !oldpkg->recommends_count && !oldpkg->suggests_count) {
+ 	  oldpkg->depends_count = newpkg->depends_count;

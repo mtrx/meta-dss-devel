@@ -1,0 +1,115 @@
+Index: trunk/src/rrd_tool.c
+===================================================================
+--- trunk/src/rrd_tool.c	(revision 2161)
++++ trunk/src/rrd_tool.c	(revision 2172)
+@@ -696,4 +696,5 @@
+         }
+     } else if (strcmp("xport", argv[1]) == 0) {
++#ifdef HAVE_RRD_GRAPH
+         int       xxsize;
+         unsigned long int j = 0;
+@@ -772,5 +773,9 @@
+         }
+         free(vtag);
++#else
++        rrd_set_error("the instance of rrdtool has been compiled without graphics");
++#endif
+     } else if (strcmp("graph", argv[1]) == 0) {
++#ifdef HAVE_RRD_GRAPH
+         char    **calcpr;
+ 
+@@ -806,5 +811,9 @@
+         }
+ 
++#else
++       rrd_set_error("the instance of rrdtool has been compiled without graphics");
++#endif
+     } else if (strcmp("graphv", argv[1]) == 0) {
++#ifdef HAVE_RRD_GRAPH
+         rrd_info_t *grinfo = NULL;  /* 1 to distinguish it from the NULL that rrd_graph sends in */
+ 
+@@ -814,5 +823,7 @@
+             rrd_info_free(grinfo);
+         }
+-
++#else
++       rrd_set_error("the instance of rrdtool has been compiled without graphics");
++#endif
+     } else if (strcmp("tune", argv[1]) == 0)
+         rrd_tune(argc - 1, &argv[1]);
+Index: trunk/src/Makefile.am
+===================================================================
+--- trunk/src/Makefile.am	(revision 1937)
++++ trunk/src/Makefile.am	(revision 2172)
+@@ -33,9 +33,6 @@
+ 
+ RRD_C_FILES =		\
++	rrd_create.c	\
+ 	hash_32.c	\
+-	pngsize.c	\
+-	rrd_create.c	\
+-	rrd_graph.c	\
+-	rrd_graph_helper.c	\
+ 	rrd_version.c	\
+ 	rrd_last.c	\
+@@ -43,6 +40,4 @@
+ 	rrd_first.c	\
+ 	rrd_restore.c	\
+-	rrd_xport.c	\
+-	rrd_gfx.c \
+ 	rrd_dump.c	\
+ 	rrd_flushcached.c \
+@@ -50,4 +45,12 @@
+ 	rrd_resize.c \
+ 	rrd_tune.c
++
++if BUILD_RRDGRAPH
++RRD_C_FILES += rrd_graph.c	\
++	rrd_graph_helper.c	\
++	rrd_xport.c	\
++	rrd_gfx.c \
++	pngsize.c
++endif
+ 
+ noinst_HEADERS = \
+Index: trunk/configure.ac
+===================================================================
+--- trunk/configure.ac	(revision 2161)
++++ trunk/configure.ac	(revision 2172)
+@@ -102,4 +102,11 @@
+ AC_ARG_ENABLE(rrdcgi,AS_HELP_STRING([--disable-rrdcgi],[disable building of rrdcgi]),
+ [],[enable_rrdcgi=yes])
++
++AC_ARG_ENABLE(rrd_graph,AS_HELP_STRING([--disable-rrd_graph],[disable all rrd_graph functions]),
++[enable_rrdcgi=no],[enable_rrd_graph=yes])
++
++if test $enable_rrd_graph != no; then
++ AC_DEFINE([HAVE_RRD_GRAPH], [], [is rrd_graph supported by this install])
++fi
+ 
+ dnl Check if we run on a system that has fonts
+@@ -537,7 +544,10 @@
+ AM_CONDITIONAL(BUILD_RRDCGI,[test $enable_rrdcgi != no])
+ 
++AM_CONDITIONAL(BUILD_RRDGRAPH,[test $enable_rrd_graph != no])
++
+ 
+ CORE_LIBS="$LIBS"
+ 
++if test $enable_rrd_graph != no; then
+ dnl EX_CHECK_ALL(z,          zlibVersion,               zlib.h,                 zlib,        1.2.3,  http://www.gzip.org/zlib/, "")
+ dnl EX_CHECK_ALL(png,        png_access_version_number, png.h,                  libpng,      1.2.10,  http://prdownloads.sourceforge.net/libpng/, "")
+@@ -550,4 +560,7 @@
+ EX_CHECK_ALL(glib-2.0,   glib_check_version,            glib.h,                 glib-2.0,    2.12.12, ftp://ftp.gtk.org/pub/glib/2.12/, "")
+ EX_CHECK_ALL(pangocairo-1.0,  pango_cairo_context_set_font_options,  pango/pango.h,  pangocairo,  1.17,    http://ftp.gnome.org/pub/GNOME/sources/pango/1.17, "")
++
++fi
++
+ EX_CHECK_ALL(xml2,       xmlParseFile,                  libxml/parser.h,        libxml-2.0,        2.6.31,  http://xmlsoft.org/downloads.html, /usr/include/libxml2)
+ 
+@@ -958,4 +971,5 @@
+ echo "          With MMAP IO: $enable_mmap"
+ echo "      Build rrd_getopt: $build_getopt"
++echo "       Build rrd_graph: $enable_rrd_graph"
+ echo "       Static programs: $staticprogs"
+ echo "          Perl Modules: $COMP_PERL"

@@ -1,0 +1,228 @@
+From 57e7005d71396e7a3fa6454154ea8be30731ac52 Mon Sep 17 00:00:00 2001
+From: Christian Hitz <christian.hitz@aizo.com>
+Date: Tue, 4 Oct 2011 15:18:16 +0200
+Subject: [PATCH 16/16] changes for dSS11 V005/6
+
+- NAND bus width is 8-bit
+- SD card interface is not present
+- add support for SPI flash
+- bootstrap, u-boot and environment move to SPI flash
+- extend rootfs partition to fill 8Gbit NAND flash
+---
+ board/aizo/digitalSTROM/digitalSTROM.c |   41 +++++++++++++++++++-
+ include/configs/digitalSTROM.h         |   65 +++++++++++++++++---------------
+ 2 files changed, 75 insertions(+), 31 deletions(-)
+
+diff --git a/board/aizo/digitalSTROM/digitalSTROM.c b/board/aizo/digitalSTROM/digitalSTROM.c
+index 61dabb7..419f158 100644
+--- a/board/aizo/digitalSTROM/digitalSTROM.c
++++ b/board/aizo/digitalSTROM/digitalSTROM.c
+@@ -231,6 +231,9 @@ int board_init(void)
+ #ifdef CONFIG_ATMEL_MCI
+ 	at91_mci0_hw_init(3<<2); /* Slot B, 4wire */
+ #endif
++#ifdef CONFIG_ATMEL_SPI
++    at91_spi0_hw_init(1 << 1);
++#endif
+ 
+ 	return 0;
+ }
+@@ -262,7 +265,7 @@ int board_eth_init(bd_t *bis)
+ 			break;
+         case 2: puts("(small V004) ");
+             break;
+-        case 3: puts("(small V005) ");
++        case 3: puts("(small V005/V006) ");
+             break;
+ 		default:	puts("(unknown) ");
+ 	}
+@@ -274,6 +277,42 @@ void aizo_board_variant(int board)
+ 	board_variant = board;
+ }
+ 
++/* SPI chip select control */
++#ifdef CONFIG_ATMEL_SPI
++#include <spi.h>
++
++int spi_cs_is_valid(unsigned int bus, unsigned int cs)
++{
++    return bus == 0 && cs < 2;
++}
++
++void spi_cs_activate(struct spi_slave *slave)
++{
++    switch(slave->cs) {
++        case 1:
++            at91_set_gpio_output(AT91_PIN_PC11, 0);
++            break;
++        case 0:
++        default:
++            at91_set_gpio_output(AT91_PIN_PB3, 0);
++            break;
++    }
++}
++
++void spi_cs_deactivate(struct spi_slave *slave)
++{
++    switch(slave->cs) {
++        case 1:
++            at91_set_gpio_output(AT91_PIN_PC11, 1);
++            break;
++        case 0:
++        default:
++            at91_set_gpio_output(AT91_PIN_PB3, 1);
++        break;
++    }
++}
++#endif /* CONFIG_ATMEL_SPI */
++
+ 
+ static int cmd_clkdiv(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
+ {
+diff --git a/include/configs/digitalSTROM.h b/include/configs/digitalSTROM.h
+index 279651d..f435ebd 100644
+--- a/include/configs/digitalSTROM.h
++++ b/include/configs/digitalSTROM.h
+@@ -84,6 +84,8 @@
+ 
+ #define CONFIG_BOOTDELAY	3
+ 
++#define CONFIG_SYS_USE_SERIALFLASH_CS1 1
++
+ /*
+  * BOOTP options
+  */
+@@ -133,14 +135,6 @@
+ #define CONFIG_MX_CYCLIC	1
+ #define CONFIG_AUTO_COMPLETE	1
+ 
+-/* SD/MMC card */
+-#define CONFIG_MMC                      1
+-#define CONFIG_GENERIC_MMC              1
+-#define CONFIG_GENERIC_ATMEL_MCI        1
+-#define CONFIG_ATMEL_MCI_PORTB          1       /* Atmel XE-EK uses port B */
+-#define CONFIG_SYS_MMC_CD_PIN           AT91_PIN_PC9
+-#define CONFIG_CMD_MMC                  1
+-
+ /*
+  * SDRAM: 1 bank, min 32, max 128 MB
+  * Initialized before u-boot gets started.
+@@ -183,12 +177,29 @@
+ #define DATAFLASH_TCHS			(0x1 << 24)
+ #endif
+ 
++#ifdef CONFIG_SYS_USE_SERIALFLASH_CS1
++#define CONFIG_ATMEL_SPI
++#define CONFIG_SPI_FLASH
++#define CONFIG_CMD_SF
++#define CONFIG_SF_DEFAULT_HZ       1000000
++#define CONFIG_SPI_FLASH_STMICRO
++
++#define CONFIG_ENV_IS_IN_SPI_FLASH
++#define CONFIG_ENV_SPI_CS          1
++//#define CONFIG_ENV_SPI_MODE        SPI_MODE_2
++#define CONFIG_ENV_SPI_MAX_HZ      1000000
++#define CONFIG_ENV_OFFSET          0x70000
++#define CONFIG_ENV_SIZE            0x10000
++#define CONFIG_ENV_SECT_SIZE       0x10000
++#define CONFIG_ENV_OVERWRITE       1
++#endif
++
+ /* NAND flash */
+ #ifdef CONFIG_CMD_NAND
+ #define CONFIG_NAND_ATMEL
+ #define CONFIG_SYS_MAX_NAND_DEVICE	1
+ #define CONFIG_SYS_NAND_BASE		ATMEL_BASE_CS3
+-#define CONFIG_SYS_NAND_DBW_16
++#define CONFIG_SYS_NAND_DBW_8
+ #define CONFIG_SYS_NAND_MASK_ALE	(1 << 21)
+ #define CONFIG_SYS_NAND_MASK_CLE	(1 << 22)
+ #define CONFIG_SYS_NAND_ENABLE_PIN	AT91_PIN_PC14
+@@ -203,13 +214,10 @@
+ #define CONFIG_MTD_PARTITIONS	1
+ #define MTDIDS_DEFAULT		"nand0=atmel_nand"
+ #define MTDPARTS_DEFAULT	"mtdparts=atmel_nand:"	\
+-					"128k(bootstrap),"			\
+-					"512k(uboot)ro,"			\
+-					"256k(uboot-env),"			\
+ 					"2M(kernel-rescue),"			\
+ 					"2M(kernel-prod),"			\
+ 					"32M(rootfs-rescue),"			\
+-					"200M(rootfs-prod),"			\
++					"800M(rootfs-prod),"			\
+ 					"-(config)"
+ 
+ /* NOR flash - no real flash on this board */
+@@ -222,7 +230,7 @@
+ #define CONFIG_NET_RETRY_COUNT		20
+ #define CONFIG_RESET_PHY_R		1
+ #define CONFIG_MACB_SEARCH_PHY		1
+-#undef CONFIG_OVERWRITE_ETHADDR_ONCE
++#define CONFIG_ENV_OVERWRITE    1
+ #define CONFIG_ETHADDR			a8:99:5c:c0:ff:ee
+ 
+ /* USB */
+@@ -257,28 +265,25 @@
+ 
+ #elif CONFIG_SYS_USE_DATAFLASH_CS1
+ 
+-/* bootstrap + u-boot + env + linux in dataflash on CS1 */
++/* bootstrap + u-boot + env in dataflash on CS1 */
+ #define CONFIG_ENV_IS_IN_DATAFLASH	1
+ #define CONFIG_SYS_MONITOR_BASE	(CONFIG_SYS_DATAFLASH_LOGIC_ADDR_CS1 + 0x8400)
+ #define CONFIG_ENV_OFFSET		0x4200
+ #define CONFIG_ENV_ADDR		(CONFIG_SYS_DATAFLASH_LOGIC_ADDR_CS1 + CONFIG_ENV_OFFSET)
+ #define CONFIG_ENV_SIZE		0x4200
+-#define CONFIG_BOOTCOMMAND	"cp.b 0xD0042000 0x22000000 0x210000; bootm"
++/*#define CONFIG_BOOTCOMMAND	"cp.b 0xD0042000 0x22000000 0x210000; bootm"
+ #define CONFIG_BOOTARGS		"console=ttyS0,115200 "			\
+ 				"root=/dev/mtdblock0 "			\
+ 				"mtdparts=atmel_nand:-(root) "		\
+-				"rw rootfstype=jffs2"
++				"rw rootfstype=jffs2"*/
++#endif
+ 
+-#else /* CONFIG_SYS_USE_NANDFLASH */
++#ifdef CONFIG_SYS_USE_NANDFLASH
+ 
+-/* bootstrap + u-boot + env + linux in nandflash */
+-#define CONFIG_ENV_IS_IN_NAND	1
+-#define CONFIG_ENV_OFFSET		0xa0000
+-#define CONFIG_ENV_OFFSET_REDUND	0xc0000
+-#define CONFIG_ENV_SIZE		0x20000		/* 1 sector = 128 kB */
++/* linux in nandflash */
+ #define CONFIG_BOOTCOMMAND	"run boot_system"
+ #define CONFIG_BOOTARGS		"console=ttyS0,115200 "			\
+-				"root=/dev/mtdblock6 "			\
++				"root=/dev/mtdblock3 "			\
+ 				"rw rootfstype=jffs2 "			\
+ 				MTDPARTS_DEFAULT
+ 
+@@ -300,18 +305,18 @@
+  *
+  */
+ #define CONFIG_EXTRA_ENV_SETTINGS \
+-				"kernel_addr=0x2E0000\0" \
+-				"rootfs_part=6\0" \
+-                                "setup_sysrescue=echo \"Selecting rescue/update system\";setenv kernel_addr 0xE0000;setenv rootfs_part 5\0" \
+-                                "setup_sysprod=echo \"Selecting production system\";setenv kernel_addr 0x2E0000;setenv rootfs_part 6\0" \
++				"kernel_addr=0x200000\0" \
++				"rootfs_part=3\0" \
++                                "setup_sysrescue=echo \"Selecting rescue/update system\";setenv kernel_addr 0x00000;setenv rootfs_part 2\0" \
++                                "setup_sysprod=echo \"Selecting production system\";setenv kernel_addr 0x200000;setenv rootfs_part 3\0" \
+                                 "setup_sys=run setup_sysprod\0" \
+                                 "select_setup=run setup_sys\$bootsel || run setup_sysrescue\0" \
+ 				"setargs=setenv bootargs console=ttyS0,115200 root=/dev/mtdblock\$rootfs_part rw rootfstype=jffs2 " MTDPARTS_DEFAULT "\0" \
+                                 "boot_system=run select_setup;run setargs;nboot 0x22000000 0 \$kernel_addr;bootm 0x22000000\0" \
+ 				"mtdids=" MTDIDS_DEFAULT "\0" \
+                                 "mtdparts=" MTDPARTS_DEFAULT "\0" \
+-				"partition=nand0,6\0" \
+-				"mtddevnum=6\0" \
++				"partition=nand0,3\0" \
++				"mtddevnum=3\0" \
+ 				"mtddevname=targetfs\0" \
+ 				"ipaddr=192.168.1.61\0" \
+ 				"serverip=192.168.1.60\0" \
+-- 
+1.7.4.1
+

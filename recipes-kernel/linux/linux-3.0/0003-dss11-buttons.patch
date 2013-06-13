@@ -1,0 +1,54 @@
+From 25022393e6f9318db092412c40b7571a5e2b068c Mon Sep 17 00:00:00 2001
+From: Johannes Winkelmann <johannes.winkelmann@aizo.com>
+Date: Tue, 26 Jul 2011 16:27:20 +0200
+Subject: [PATCH 03/17] dss11 buttons
+
+---
+ arch/arm/mach-at91/board-sam9g20ek.c |   20 ++++++++++----------
+ 1 files changed, 10 insertions(+), 10 deletions(-)
+
+diff --git a/arch/arm/mach-at91/board-sam9g20ek.c b/arch/arm/mach-at91/board-sam9g20ek.c
+index 0317a1a..56cff22 100644
+--- a/arch/arm/mach-at91/board-sam9g20ek.c
++++ b/arch/arm/mach-at91/board-sam9g20ek.c
+@@ -282,16 +282,16 @@ static void __init ek_add_device_gpio_leds(void)
+ #if defined(CONFIG_KEYBOARD_GPIO) || defined(CONFIG_KEYBOARD_GPIO_MODULE)
+ static struct gpio_keys_button ek_buttons[] = {
+ 	{
+-		.gpio		= AT91_PIN_PA30,
+-		.code		= BTN_3,
+-		.desc		= "Button 3",
++		.gpio		= AT91_PIN_PB2,
++		.code		= BTN_1,
++		.desc		= "Button 1",
+ 		.active_low	= 1,
+ 		.wakeup		= 1,
+ 	},
+ 	{
+-		.gpio		= AT91_PIN_PA31,
+-		.code		= BTN_4,
+-		.desc		= "Button 4",
++		.gpio		= AT91_PIN_PB21,
++		.code		= BTN_2,
++		.desc		= "Button 2",
+ 		.active_low	= 1,
+ 		.wakeup		= 1,
+ 	}
+@@ -313,10 +313,10 @@ static struct platform_device ek_button_device = {
+ 
+ static void __init ek_add_device_buttons(void)
+ {
+-	at91_set_gpio_input(AT91_PIN_PA30, 1);	/* btn3 */
+-	at91_set_deglitch(AT91_PIN_PA30, 1);
+-	at91_set_gpio_input(AT91_PIN_PA31, 1);	/* btn4 */
+-	at91_set_deglitch(AT91_PIN_PA31, 1);
++	at91_set_gpio_input(AT91_PIN_PB2, 1);	/* btn1 */
++	at91_set_deglitch(AT91_PIN_PB2, 1);
++	at91_set_gpio_input(AT91_PIN_PB21, 1);	/* btn2 */
++	at91_set_deglitch(AT91_PIN_PB21, 1);
+ 
+ 	platform_device_register(&ek_button_device);
+ }
+-- 
+1.7.4.1
+

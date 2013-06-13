@@ -1,0 +1,102 @@
+--- runit-2.1.1.orig/src/svlogd.c	2009-10-04 22:44:02.000000000 +0200
++++ runit-2.1.1/src/svlogd.c	2010-08-25 14:01:14.000000000 +0200
+@@ -33,7 +33,7 @@
+ #include "ndelay.h"
+ #include "iopause.h"
+ 
+-#define USAGE " [-ttv] [-r c] [-R abc] [-l len] [-b buflen] dir ..."
++#define USAGE " [-ttmv] [-r c] [-R abc] [-l len] [-b buflen] [-n logname] dir ..."
+ #define VERSION "$Id: 5e55a90e0a1b35ec47fed3021453c50675ea1117 $"
+ 
+ #define FATAL "svlogd: fatal: "
+@@ -43,7 +43,11 @@
+ 
+ const char *progname;
+ 
++#define DEFAULT_LOGNAME "current"
++const char *logname = DEFAULT_LOGNAME;
++
+ unsigned int verbose =0;
++unsigned int norename =0;
+ unsigned int timestamp =0;
+ unsigned long linemax =1000;
+ unsigned long buflen =1024;
+@@ -290,9 +294,9 @@
+       strerr_warn6(INFO, "rename: ", ld->name, "/current ",
+                    ld->fnsave, tmp, 0);
+     }
+-    while (rename("current", ld->fnsave) == -1)
++    while (rename(logname, ld->fnsave) == -1)
+       pause2("unable to rename current", ld->name);
+-    while ((ld->fdcur =open_append("current")) == -1)
++    while ((ld->fdcur =open_append(logname)) == -1)
+       pause2("unable to create new current", ld->name);
+     coe(ld->fdcur);
+     ld->size =0;
+@@ -424,8 +428,8 @@
+   coe(ld->fdlock);
+ 
+   ld->size =0;
+-  ld->sizemax =1000000;
+-  ld->nmax =ld->nmin =10;
++  ld->sizemax =0;
++  ld->nmax =ld->nmin =0;
+   ld->tmax =0;
+   ld->name =(char*)fn;
+   ld->ppid =0;
+@@ -520,15 +524,15 @@
+   }
+ 
+   /* open current */
+-  if ((i =stat("current", &st)) != -1) {
+-    if (st.st_size && ! (st.st_mode & S_IXUSR)) {
++  if (((i =stat(logname, &st)) != -1)) {
++    if (st.st_size && ! (st.st_mode & S_IXUSR) && ! norename ) {
+       ld->fnsave[25] ='.'; ld->fnsave[26] ='u'; ld->fnsave[27] =0;
+       do {
+         taia_now(&now);
+         fmt_taia(ld->fnsave, &now);
+         errno =0;
+       } while ((stat(ld->fnsave, &st) != -1) || (errno != error_noent));
+-      while (rename("current", ld->fnsave) == -1)
++      while (rename(logname, ld->fnsave) == -1)
+         pause2("unable to rename current", ld->name);
+       rmoldest(ld);
+       i =-1;
+@@ -544,7 +548,7 @@
+         pause1("unable to change to initial working directory");
+       return(0);
+     }
+-  while ((ld->fdcur =open_append("current")) == -1)
++  while ((ld->fdcur =open_append(logname)) == -1)
+     pause2("unable to open current", ld->name);
+   coe(ld->fdcur);
+   while (fchmod(ld->fdcur, 0644) == -1)
+@@ -667,7 +671,7 @@
+ 
+   progname =*argv;
+ 
+-  while ((opt =getopt(argc, argv, "R:r:l:b:tvV")) != opteof) {
++  while ((opt =getopt(argc, argv, "R:r:l:b:n:tmvV")) != opteof) {
+     switch(opt) {
+     case 'R':
+       replace =optarg;
+@@ -685,12 +689,18 @@
+       scan_ulong(optarg, &buflen);
+       if (buflen == 0) buflen =1024;
+       break;
++    case 'n':
++      logname =optarg;
++      break;
+     case 't':
+       if (++timestamp > 3) timestamp =3;
+       break;
+     case 'v':
+       ++verbose;
+       break;
++    case 'm':
++      ++norename;
++      break;
+     case 'V': strerr_warn1(VERSION, 0);
+     case '?': usage();
+     }

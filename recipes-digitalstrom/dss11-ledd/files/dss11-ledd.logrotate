@@ -1,0 +1,14 @@
+/var/log/dss11-ledd.log {
+    size 256k
+    rotate 2
+    missingok
+    notifempty
+    sharedscripts
+    postrotate
+        PID_LOG=`cat /etc/runit/dss11-ledd/log/supervise/pid`
+        if [ -n "$PID_LOG" ]; then
+           kill -HUP $PID_LOG > /dev/null 2>&1
+        fi
+    endscript
+}
+

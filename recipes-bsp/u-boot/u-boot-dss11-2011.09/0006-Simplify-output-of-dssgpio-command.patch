@@ -1,0 +1,42 @@
+From 36a43da51e864211ece2ff76e15434b6756a1d4d Mon Sep 17 00:00:00 2001
+From: Johannes Winkelmann <johannes.winkelmann@aizo.com>
+Date: Fri, 24 Sep 2010 11:14:01 +0200
+Subject: [PATCH 06/16] Simplify output of dssgpio command
+
+---
+ board/aizo/digitalSTROM/digitalSTROM.c |    5 +----
+ 1 files changed, 1 insertions(+), 4 deletions(-)
+
+diff --git a/board/aizo/digitalSTROM/digitalSTROM.c b/board/aizo/digitalSTROM/digitalSTROM.c
+index 33dc28b..f48139d 100644
+--- a/board/aizo/digitalSTROM/digitalSTROM.c
++++ b/board/aizo/digitalSTROM/digitalSTROM.c
+@@ -314,8 +314,6 @@ static int cmd_setup_clocks(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
+ 
+ static int cmd_dssgpio(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
+ {
+-  printf("dssgpio %d\n", argc);
+-
+   switch (argc) {
+   case 0:
+   case 1:
+@@ -337,7 +335,7 @@ static int cmd_dssgpio(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
+       pin += simple_strtol(argv[2]+1, NULL, 10);
+ 
+       value = at91_get_gpio_value(pin);
+-      printf("GPIO %s (%d): %d\n", argv[2], pin, value);
++      printf("%d\n", value);
+       return 0;
+     }
+     break;
+@@ -368,7 +366,6 @@ static int cmd_dssgpio(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
+       return 0;
+     } else if (strncmp(argv[1], "set", 3) == 0) {
+       value = (argv[3][0] == '0' ? 0 : 1);
+-      printf("Setting GPIO %s (%d) to value %d\n", argv[2], pin, value);
+       at91_set_gpio_value(pin, value);
+       return 0;
+     }
+-- 
+1.7.4.1
+

@@ -1,0 +1,25 @@
+From 446324a80b69b07e9d64dbc51dd265d87c950ca5 Mon Sep 17 00:00:00 2001
+From: Johannes Winkelmann <johannes.winkelmann@aizo.com>
+Date: Wed, 6 Oct 2010 09:38:00 +0200
+Subject: [PATCH 08/16] allow overwriting mac address
+
+---
+ include/configs/digitalSTROM.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/include/configs/digitalSTROM.h b/include/configs/digitalSTROM.h
+index 6abb9e7..b401386 100644
+--- a/include/configs/digitalSTROM.h
++++ b/include/configs/digitalSTROM.h
+@@ -218,7 +218,7 @@
+ #define CONFIG_NET_RETRY_COUNT		20
+ #define CONFIG_RESET_PHY_R		1
+ #define CONFIG_MACB_SEARCH_PHY		1
+-#define CONFIG_OVERWRITE_ETHADDR_ONCE	1
++#undef CONFIG_OVERWRITE_ETHADDR_ONCE
+ #define CONFIG_ETHADDR			a8:99:5c:c0:ff:ee
+ 
+ /* USB */
+-- 
+1.7.4.1
+

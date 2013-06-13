@@ -1,0 +1,34 @@
+From 24c4877567c5bd21bf110b4115b7142b49f225ef Mon Sep 17 00:00:00 2001
+From: Christian Hitz <christian.hitz@aizo.com>
+Date: Thu, 29 Sep 2011 16:20:01 +0200
+Subject: [PATCH 12/17] enable 4-bit BCH ECC instead of 1-bit Hamming ECC
+
+---
+ drivers/mtd/nand/atmel_nand.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/mtd/nand/atmel_nand.c b/drivers/mtd/nand/atmel_nand.c
+index b300705..7a55bd5 100644
+--- a/drivers/mtd/nand/atmel_nand.c
++++ b/drivers/mtd/nand/atmel_nand.c
+@@ -543,7 +543,7 @@ static int __init atmel_nand_probe(struct platform_device *pdev)
+ 				"regs\nFalling back on software ECC\n");
+ 	}
+ 
+-	nand_chip->ecc.mode = NAND_ECC_SOFT;	/* enable ECC */
++	nand_chip->ecc.mode = NAND_ECC_SOFT_BCH;	/* enable ECC */
+ 	if (no_ecc)
+ 		nand_chip->ecc.mode = NAND_ECC_NONE;
+ 	if (hard_ecc && regs) {
+@@ -560,6 +560,8 @@ static int __init atmel_nand_probe(struct platform_device *pdev)
+ 		nand_chip->ecc.read_page = atmel_nand_read_page;
+ 		nand_chip->ecc.bytes = 4;
+ 	}
++	nand_chip->ecc.size = 512;
++	nand_chip->ecc.bytes = 7;
+ 
+ 	nand_chip->chip_delay = 20;		/* 20us command delay time */
+ 
+-- 
+1.7.4.1
+

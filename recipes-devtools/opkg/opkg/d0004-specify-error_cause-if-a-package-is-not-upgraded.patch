@@ -1,0 +1,45 @@
+From 42357d568359b45f3fa07f2b6e0982ce287b5aaf Mon Sep 17 00:00:00 2001
+From: Christian Hitz <christian.hitz@aizo.com>
+Date: Fri, 16 Dec 2011 13:50:05 +0100
+Subject: [PATCH 4/4] specify error_cause if a package is not upgraded
+
+---
+ libopkg/opkg_install.c |    2 ++
+ libopkg/opkg_message.h |    1 +
+ 2 files changed, 3 insertions(+), 0 deletions(-)
+
+diff --git a/libopkg/opkg_install.c b/libopkg/opkg_install.c
+index cc302e7..2193789 100644
+--- a/libopkg/opkg_install.c
++++ b/libopkg/opkg_install.c
+@@ -475,6 +475,7 @@ opkg_install_check_downgrade(pkg_t *pkg, pkg_t *old_pkg, int message)
+                           "Not downgrading package %s on %s from %s to %s.\n",
+                           old_pkg->name, old_pkg->dest->name, old_version, new_version);
+ 	       rc = 1;
++	       opkg_error_cause(ERROR_PACKAGE_NOT_DOWNGRADED);
+ 	  } else if (cmp < 0) {
+               if(!conf->download_only)
+                   opkg_msg(NOTICE, "%s%s on %s from %s to %s...\n",
+@@ -486,6 +487,7 @@ opkg_install_check_downgrade(pkg_t *pkg, pkg_t *old_pkg, int message)
+                    opkg_msg(NOTICE, "%s (%s) already install on %s.\n",
+ 			pkg->name, new_version, old_pkg->dest->name);
+ 	       rc = 1;
++	       opkg_error_cause(ERROR_PACKAGE_ALREADY_INSTALLED);
+ 	  }
+ 	  free(old_version);
+ 	  free(new_version);
+diff --git a/libopkg/opkg_message.h b/libopkg/opkg_message.h
+index 0638a3f..288676e 100644
+--- a/libopkg/opkg_message.h
++++ b/libopkg/opkg_message.h
+@@ -41,6 +41,7 @@ typedef enum {
+ #define ERROR_SHA256_ERROR               (1UL << 9)
+ #define ERROR_POSTINSTALL_SCRIPT         (1UL << 10)
+ #define ERROR_PRERM_SCRIPT               (1UL << 11)
++#define ERROR_PACKAGE_NOT_DOWNGRADED     (1UL << 12)
+ 
+ void free_error_list(void);
+ void print_error_list(void);
+-- 
+1.7.5.4
+

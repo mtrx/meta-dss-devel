@@ -1,0 +1,40 @@
+#! /bin/sh 
+#
+# This is an init script for openembedded
+# Copy it to /etc/init.d/upnpbeacon and type
+# > update-rc.d ntpclient defaults 90
+#
+
+UPNPBEACON=/usr/bin/upnpbeacon
+PIDFILE=/var/run/upnpbeacon.pid
+
+test -x "$UPNPBEACON" || exit 0
+
+case "$1" in
+  start)
+    echo -n "Starting UPnP beacon"
+    start-stop-daemon --start --quiet --background --make-pidfile --pidfile $PIDFILE --exec $UPNPBEACON 
+    echo "."
+    ;;
+  stop)
+    echo -n "Stopping UPnP beacon"
+    start-stop-daemon --stop --quiet --pidfile $PIDFILE
+    echo "."
+    ;;
+  restart)
+    echo -n "Stopping UPnP beacon"
+    start-stop-daemon --stop --quiet --pidfile $PIDFILE
+    echo "."
+
+    sleep 1
+
+    echo -n "Starting UPnP beacon"
+    start-stop-daemon --start --quiet --background --make-pidfile --pidfile $PIDFILE --exec $UPNPBEACON 
+    echo "."
+    ;;
+  *)
+    echo "Usage: /etc/init.d/upnpbeacon {start|stop|restart}"
+    exit 1
+esac
+
+exit 0

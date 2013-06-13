@@ -1,0 +1,9 @@
+#!/bin/sh
+
+MAILQ=/tmp/mailq/
+MAILSCRIPT=/usr/sbin/mailq
+
+mkdir -p $MAILQ
+exec 2>&1
+inotifyd $MAILSCRIPT ${MAILQ}:n
+

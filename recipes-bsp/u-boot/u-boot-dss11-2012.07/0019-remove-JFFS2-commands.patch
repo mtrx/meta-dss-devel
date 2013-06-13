@@ -1,0 +1,24 @@
+From db95b4d4e7aba3764ba930d556f3b6c3735f3d08 Mon Sep 17 00:00:00 2001
+From: Christian Hitz <christian.hitz@aizo.com>
+Date: Thu, 16 Aug 2012 17:06:20 +0200
+Subject: [PATCH 19/20] remove JFFS2 commands
+
+---
+ include/configs/digitalSTROM.h |    1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/include/configs/digitalSTROM.h b/include/configs/digitalSTROM.h
+index 0ecf9de..142b2a3 100644
+--- a/include/configs/digitalSTROM.h
++++ b/include/configs/digitalSTROM.h
+@@ -103,7 +103,6 @@
+ #define CONFIG_CMD_AUTOSCRIPT	1
+ #define CONFIG_CMD_ASKENV	1
+ #define CONFIG_CMD_EXT2		1
+-#define CONFIG_CMD_JFFS2	1
+ #define CONFIG_CMD_PING		1
+ #define CONFIG_CMD_DHCP		1
+ #define CONFIG_MTD_DEVICE       1
+-- 
+1.7.9.5
+

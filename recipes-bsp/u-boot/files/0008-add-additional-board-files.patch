@@ -1,0 +1,181 @@
+From c76454991d8c37c6e3c3c2231d9e4822ad334023 Mon Sep 17 00:00:00 2001
+From: Johannes Winkelmann <johannes.winkelmann@aizo.com>
+Date: Mon, 21 Mar 2011 15:06:58 +0100
+Subject: [PATCH 8/8] add additional board files
+
+---
+ board/aizo/digitalSTROM/Makefile    |   56 +++++++++++++++++++++++++++++++++++
+ board/aizo/digitalSTROM/config.mk   |    1 +
+ board/aizo/digitalSTROM/led.c       |   41 +++++++++++++++++++++++++
+ board/aizo/digitalSTROM/partition.c |   40 +++++++++++++++++++++++++
+ 4 files changed, 138 insertions(+), 0 deletions(-)
+ create mode 100644 board/aizo/digitalSTROM/Makefile
+ create mode 100644 board/aizo/digitalSTROM/config.mk
+ create mode 100644 board/aizo/digitalSTROM/led.c
+ create mode 100644 board/aizo/digitalSTROM/partition.c
+
+diff --git a/board/aizo/digitalSTROM/Makefile b/board/aizo/digitalSTROM/Makefile
+new file mode 100644
+index 0000000..d60762b
+--- /dev/null
++++ b/board/aizo/digitalSTROM/Makefile
+@@ -0,0 +1,56 @@
++#
++# (C) Copyright 2003-2008
++# Wolfgang Denk, DENX Software Engineering, wd@denx.de.
++#
++# (C) Copyright 2008
++# Stelian Pop <stelian.pop@leadtechdesign.com>
++# Lead Tech Design <www.leadtechdesign.com>
++#
++# See file CREDITS for list of people who contributed to this
++# project.
++#
++# This program is free software; you can redistribute it and/or
++# modify it under the terms of the GNU General Public License as
++# published by the Free Software Foundation; either version 2 of
++# the License, or (at your option) any later version.
++#
++# This program is distributed in the hope that it will be useful,
++# but WITHOUT ANY WARRANTY; without even the implied warranty of
++# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
++# GNU General Public License for more details.
++#
++# You should have received a copy of the GNU General Public License
++# along with this program; if not, write to the Free Software
++# Foundation, Inc., 59 Temple Place, Suite 330, Boston,
++# MA 02111-1307 USA
++#
++
++include $(TOPDIR)/config.mk
++
++LIB	= $(obj)lib$(BOARD).a
++
++COBJS-y	+= digitalSTROM.o
++# COBJS-y	+= led.o
++COBJS-$(CONFIG_HAS_DATAFLASH) += partition.o
++
++SRCS	:= $(SOBJS:.o=.S) $(COBJS-y:.o=.c)
++OBJS	:= $(addprefix $(obj),$(COBJS-y))
++SOBJS	:= $(addprefix $(obj),$(SOBJS))
++
++$(LIB):	$(obj).depend $(OBJS) $(SOBJS)
++	$(AR) $(ARFLAGS) $@ $(OBJS) $(SOBJS)
++
++clean:
++	rm -f $(SOBJS) $(OBJS)
++
++distclean:	clean
++	rm -f $(LIB) core *.bak $(obj).depend
++
++#########################################################################
++
++# defines $(obj).depend target
++include $(SRCTREE)/rules.mk
++
++sinclude $(obj).depend
++
++#########################################################################
+diff --git a/board/aizo/digitalSTROM/config.mk b/board/aizo/digitalSTROM/config.mk
+new file mode 100644
+index 0000000..ff2cfd1
+--- /dev/null
++++ b/board/aizo/digitalSTROM/config.mk
+@@ -0,0 +1 @@
++TEXT_BASE = 0x23f00000
+diff --git a/board/aizo/digitalSTROM/led.c b/board/aizo/digitalSTROM/led.c
+new file mode 100644
+index 0000000..2424d27
+--- /dev/null
++++ b/board/aizo/digitalSTROM/led.c
+@@ -0,0 +1,41 @@
++/*
++ * (C) Copyright 2007-2008
++ * Stelian Pop <stelian.pop@leadtechdesign.com>
++ * Lead Tech Design <www.leadtechdesign.com>
++ *
++ * See file CREDITS for list of people who contributed to this
++ * project.
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation; either version 2 of
++ * the License, or (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
++ * MA 02111-1307 USA
++ */
++
++#include <common.h>
++#include <asm/arch/at91sam9260.h>
++#include <asm/arch/at91_pmc.h>
++#include <asm/arch/gpio.h>
++#include <asm/arch/io.h>
++
++void coloured_LED_init(void)
++{
++	/* Enable clock */
++	at91_sys_write(AT91_PMC_PCER, 1 << AT91SAM9260_ID_PIOA);
++
++	at91_set_gpio_output(CONFIG_RED_LED, 1);
++	at91_set_gpio_output(CONFIG_GREEN_LED, 1);
++
++	at91_set_gpio_value(CONFIG_RED_LED, 0);
++	at91_set_gpio_value(CONFIG_GREEN_LED, 1);
++}
+diff --git a/board/aizo/digitalSTROM/partition.c b/board/aizo/digitalSTROM/partition.c
+new file mode 100644
+index 0000000..2629c67
+--- /dev/null
++++ b/board/aizo/digitalSTROM/partition.c
+@@ -0,0 +1,40 @@
++/*
++ * (C) Copyright 2008
++ * Ulf Samuelsson <ulf@atmel.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation; either version 2 of
++ * the License, or (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
++ * MA 02111-1307 USA
++ *
++ */
++#include <common.h>
++#include <config.h>
++#include <asm/hardware.h>
++#include <dataflash.h>
++
++AT91S_DATAFLASH_INFO dataflash_info[CONFIG_SYS_MAX_DATAFLASH_BANKS];
++
++struct dataflash_addr cs[CONFIG_SYS_MAX_DATAFLASH_BANKS] = {
++	{CONFIG_SYS_DATAFLASH_LOGIC_ADDR_CS0, 0},	/* Logical adress, CS */
++	{CONFIG_SYS_DATAFLASH_LOGIC_ADDR_CS1, 1}
++};
++
++/*define the area offsets*/
++dataflash_protect_t area_list[NB_DATAFLASH_AREA] = {
++	{0x00000000, 0x000041FF, FLAG_PROTECT_SET,   0, "Bootstrap"},
++	{0x00004200, 0x000083FF, FLAG_PROTECT_CLEAR, 0, "Environment"},
++	{0x00008400, 0x00041FFF, FLAG_PROTECT_SET,   0, "U-Boot"},
++	{0x00042000, 0x00251FFF, FLAG_PROTECT_CLEAR, 0,	"Kernel"},
++	{0x00252000, 0xFFFFFFFF, FLAG_PROTECT_CLEAR, 0,	"FS"},
++};
+-- 
+1.7.1
+

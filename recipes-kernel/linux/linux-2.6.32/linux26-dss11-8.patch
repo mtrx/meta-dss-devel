@@ -1,0 +1,527 @@
+From 41183ac34e9ff214518400d6125d8a762da6f9cc Mon Sep 17 00:00:00 2001
+From: Johannes Winkelmann <johannes.winkelmann@aizo.com>
+Date: Mon, 10 Jan 2011 10:16:12 +0100
+Subject: [PATCH] apply dss11 patch
+
+---
+ arch/arm/mach-at91/at91sam9260_devices.c |   21 ++++-
+ arch/arm/mach-at91/board-sam9g20ek.c     |  142 ++++++++++++++++++++++-------
+ arch/arm/mach-at91/include/mach/board.h  |    2 +
+ drivers/mmc/core/mmc_ops.c               |    1 +
+ drivers/mmc/host/at91_mci.c              |   70 +++++++++++++++
+ drivers/serial/atmel_serial.c            |   33 +++++++-
+ 6 files changed, 232 insertions(+), 37 deletions(-)
+
+diff --git a/arch/arm/mach-at91/at91sam9260_devices.c b/arch/arm/mach-at91/at91sam9260_devices.c
+index 07eb7b0..452f103 100644
+--- a/arch/arm/mach-at91/at91sam9260_devices.c
++++ b/arch/arm/mach-at91/at91sam9260_devices.c
+@@ -183,8 +183,15 @@ void __init at91_add_device_eth(struct at91_eth_data *data)
+ 		at91_set_B_periph(AT91_PIN_PA25, 0);	/* ERX2 */
+ 		at91_set_B_periph(AT91_PIN_PA26, 0);	/* ERX3 */
+ 		at91_set_B_periph(AT91_PIN_PA27, 0);	/* ERXCK */
++#if defined(CONFIG_AIZO_DSS11)
++		at91_set_A_periph(AT91_PIN_PA23, 0);	/* TWD */
++		at91_set_A_periph(AT91_PIN_PA24, 0);	/* TWCK */
++		at91_set_B_periph(AT91_PIN_PA10, 0);	/* ETX2 */
++		at91_set_B_periph(AT91_PIN_PA11, 0);	/* ETX3 */
++#else
+ 		at91_set_B_periph(AT91_PIN_PA23, 0);	/* ETX2 */
+ 		at91_set_B_periph(AT91_PIN_PA24, 0);	/* ETX3 */
++#endif
+ 		at91_set_B_periph(AT91_PIN_PA22, 0);	/* ETXER */
+ 	}
+ 
+@@ -965,10 +972,22 @@ static inline void configure_usart1_pins(unsigned pins)
+ 	at91_set_A_periph(AT91_PIN_PB6, 1);		/* TXD1 */
+ 	at91_set_A_periph(AT91_PIN_PB7, 0);		/* RXD1 */
+ 
++	/* ugly Hack for AIZO:
++	 * the RTS pin will not stay low in RS485 mode, so we need to set
++	 * this in in drivers/serial/atmel_serial.c during the open of the
++	 * device. :(
++	 */
++	/*
+ 	if (pins & ATMEL_UART_RTS)
+-		at91_set_A_periph(AT91_PIN_PB28, 0);	/* RTS1 */
++		at91_set_A_periph(AT91_PIN_PB28, 0); */	/* RTS1 */
++
+ 	if (pins & ATMEL_UART_CTS)
+ 		at91_set_A_periph(AT91_PIN_PB29, 0);	/* CTS1 */
++
++	if (pins & ATMEL_UART_RS485)
++		uart1_data.use_rs485 = 1;
++	else
++		uart1_data.use_rs485 = 0;
+ }
+ 
+ static struct resource uart2_resources[] = {
+diff --git a/arch/arm/mach-at91/board-sam9g20ek.c b/arch/arm/mach-at91/board-sam9g20ek.c
+index 29cf831..b9e2535 100644
+--- a/arch/arm/mach-at91/board-sam9g20ek.c
++++ b/arch/arm/mach-at91/board-sam9g20ek.c
+@@ -27,6 +27,11 @@
+ #include <linux/gpio_keys.h>
+ #include <linux/input.h>
+ #include <linux/clk.h>
++#include <linux/atmel_serial.h>
++#include <linux/gpio_keys.h>
++#include <linux/input.h>
++#include <linux/delay.h>
++
+ 
+ #include <mach/hardware.h>
+ #include <asm/setup.h>
+@@ -59,10 +64,14 @@ static void __init ek_map_io(void)
+ 			   | ATMEL_UART_RI);
+ 
+ 	/* USART1 on ttyS2. (Rx, Tx, RTS, CTS) */
+-	at91_register_uart(AT91SAM9260_ID_US1, 2, ATMEL_UART_CTS | ATMEL_UART_RTS);
++	at91_register_uart(AT91SAM9260_ID_US1, 2, ATMEL_UART_CTS | ATMEL_UART_RTS
++			   | ATMEL_UART_RS485);
+ 
+-	/* set serial console to ttyS0 (ie, DBGU) */
+-	at91_set_serial_console(0);
++	/* USART2 on ttyS3 (Rx, Tx, RTS) */
++	at91_register_uart(AT91SAM9260_ID_US2, 3, ATMEL_UART_RTS);
++
++	/* set serial console to ttyS1 (ie, DBGU) */
++	at91_set_serial_console(1);
+ }
+ 
+ static void __init ek_init_irq(void)
+@@ -115,7 +124,7 @@ static struct spi_board_info ek_spi_devices[] = {
+  */
+ static struct at91_eth_data __initdata ek_macb_data = {
+ 	.phy_irq_pin	= AT91_PIN_PA7,
+-	.is_rmii	= 1,
++	.is_rmii	= 0,
+ };
+ 
+ 
+@@ -126,15 +135,25 @@ static struct mtd_partition __initdata ek_nand_partition[] = {
+ 	{
+ 		.name   = "Bootstrap",
+ 		.offset = 0,
+-		.size   = 4 * SZ_1M,
++		.size   = SZ_128K,
++	},
++	{
++		.name	= "u-boot",
++		.offset	= MTDPART_OFS_NXTBLK,
++		.size	= 2 * SZ_128K,
++	},
++	{
++		.name	= "u-boot-env",
++		.offset	= MTDPART_OFS_NXTBLK,
++		.size	= 2 * SZ_128K,
+ 	},
+ 	{
+-		.name	= "Partition 1",
++		.name	= "kernel",
+ 		.offset	= MTDPART_OFS_NXTBLK,
+-		.size	= 60 * SZ_1M,
++		.size	= 2 * SZ_1M,
+ 	},
+ 	{
+-		.name	= "Partition 2",
++		.name	= "targetfs",
+ 		.offset	= MTDPART_OFS_NXTBLK,
+ 		.size	= MTDPART_SIZ_FULL,
+ 	},
+@@ -207,16 +226,20 @@ static struct at91_mmc_data __initdata ek_mmc_data = {
+  * LEDs
+  */
+ static struct gpio_led ek_leds[] = {
+-	{	/* "bottom" led, green, userled1 to be defined */
+-		.name			= "ds5",
+-		.gpio			= AT91_PIN_PA6,
+-		.active_low		= 1,
++	{	/* blue */
++		.name			= "blue",
++		.gpio			= AT91_PIN_PB3,
+ 		.default_trigger	= "none",
+ 	},
+-	{	/* "power" led, yellow */
+-		.name			= "ds1",
+-		.gpio			= AT91_PIN_PA9,
+-		.default_trigger	= "heartbeat",
++	{	/* green */
++		.name			= "green",
++		.gpio			= AT91_PIN_PB0,
++ 		.default_trigger	= "default-on",
++ 	},
++	{	/* red */
++		.name			= "red",
++		.gpio			= AT91_PIN_PB1,
++		.default_trigger	= "default-on",
+ 	}
+ };
+ 
+@@ -227,16 +250,16 @@ static struct gpio_led ek_leds[] = {
+ #if defined(CONFIG_KEYBOARD_GPIO) || defined(CONFIG_KEYBOARD_GPIO_MODULE)
+ static struct gpio_keys_button ek_buttons[] = {
+ 	{
+-		.gpio		= AT91_PIN_PA30,
+-		.code		= BTN_3,
+-		.desc		= "Button 3",
++		.gpio		= AT91_PIN_PB2,
++		.code		= BTN_1,
++		.desc		= "Button 1",
+ 		.active_low	= 1,
+ 		.wakeup		= 1,
+ 	},
+ 	{
+-		.gpio		= AT91_PIN_PA31,
+-		.code		= BTN_4,
+-		.desc		= "Button 4",
++		.gpio		= AT91_PIN_PB21,
++		.code		= BTN_2,
++		.desc		= "Button 2",
+ 		.active_low	= 1,
+ 		.wakeup		= 1,
+ 	}
+@@ -258,10 +281,10 @@ static struct platform_device ek_button_device = {
+ 
+ static void __init ek_add_device_buttons(void)
+ {
+-	at91_set_gpio_input(AT91_PIN_PA30, 1);	/* btn3 */
+-	at91_set_deglitch(AT91_PIN_PA30, 1);
+-	at91_set_gpio_input(AT91_PIN_PA31, 1);	/* btn4 */
+-	at91_set_deglitch(AT91_PIN_PA31, 1);
++	at91_set_gpio_input(AT91_PIN_PB2, 1);	/* btn1 */
++	at91_set_deglitch(AT91_PIN_PB2, 1);
++	at91_set_gpio_input(AT91_PIN_PB21, 1);	/* btn2 */
++	at91_set_deglitch(AT91_PIN_PB21, 1);
+ 
+ 	platform_device_register(&ek_button_device);
+ }
+@@ -278,35 +301,84 @@ static struct i2c_board_info __initdata ek_i2c_devices[] = {
+ };
+ 
+ 
++/*
++ * RTC
++ */
++static struct i2c_board_info __initdata digitalstrom_i2c_devices[] = {
++	        {
++			                I2C_BOARD_INFO("rs5c372a", 0x32),
++					        },
++};
++
++/* fix for aizo to switch rs485 to receive mode */
++static void aizo_fix_rs485_signaling(void)
++{
++	void __iomem *uart_reg;
++
++	/* set gpio */
++	at91_set_GPIO_periph(AT91_PIN_PB28, 0);
++	at91_set_gpio_output(AT91_PIN_PB28, 0);
++	at91_set_gpio_value(AT91_PIN_PB28, 0);
++	/* ungly workaround:
++	 * the TXempty bit get not set, therefore RTS will stay high
++	 * for the RS485 mode this is fatal. We set the GPIO in
++	 * the opening of the device in drivers/serial/atmel_serial.c
++	 * sorry, but the correct setting is not possible otherwise
++	 */
++	/* at91_set_A_periph(AT91_PIN_PB28, 0); */
++
++	uart_reg = ioremap(AT91SAM9260_BASE_US1, SZ_16K);
++	/* reset rx tx */
++	__raw_writel(ATMEL_US_RXDIS | ATMEL_US_TXDIS, uart_reg + ATMEL_US_CR);
++	__raw_writel(ATMEL_US_RSTSTA | ATMEL_US_RTSEN, uart_reg + ATMEL_US_CR);
++	/* set to rs485 mode */
++	__raw_writel((__raw_readl(uart_reg + ATMEL_US_MR) & ~ATMEL_US_USMODE)
++			| ATMEL_US_USMODE_RS485, uart_reg + ATMEL_US_MR);
++	/* enable tx */
++	__raw_writel(ATMEL_US_TXEN, uart_reg + ATMEL_US_CR);
++	/* enable transmitter */
++	__raw_writel(ATMEL_US_TXRDY, uart_reg + ATMEL_US_IER);
++	iounmap(uart_reg);
++}
++
+ static void __init ek_board_init(void)
+ {
++	struct clk		*usart2_clk;
++
++	usart2_clk = clk_get(NULL, "usart2_clk");
++	if (IS_ERR(usart2_clk))
++		printk("error enabling usart2 device clock\n");
++	else
++		clk_enable(usart2_clk);
++	/* rs485 fix */
++	aizo_fix_rs485_signaling();
+ 	/* Serial */
+ 	at91_add_device_serial();
+ 	/* USB Host */
+ 	at91_add_device_usbh(&ek_usbh_data);
+ 	/* USB Device */
+ 	at91_add_device_udc(&ek_udc_data);
+-	/* SPI */
+-	at91_add_device_spi(ek_spi_devices, ARRAY_SIZE(ek_spi_devices));
+ 	/* NAND */
+ 	ek_add_device_nand();
+ 	/* Ethernet */
+-	at91_add_device_eth(&ek_macb_data);
++        /* SPI pins are used for keys and leds */
++        /* network with MII Interface */
++        at91_add_device_eth(&ek_macb_data);
++        /* LEDs */
++        at91_gpio_leds(ek_leds, ARRAY_SIZE(ek_leds));
++        /* Push Buttons */
++        ek_add_device_buttons();
+ 	/* MMC */
+ 	at91_add_device_mmc(0, &ek_mmc_data);
+ 	/* I2C */
+-	at91_add_device_i2c(ek_i2c_devices, ARRAY_SIZE(ek_i2c_devices));
+-	/* LEDs */
+-	at91_gpio_leds(ek_leds, ARRAY_SIZE(ek_leds));
+-	/* Push Buttons */
+-	ek_add_device_buttons();
++	at91_add_device_i2c(digitalstrom_i2c_devices, ARRAY_SIZE(ek_i2c_devices));
+ 	/* PCK0 provides MCLK to the WM8731 */
+ 	at91_set_B_periph(AT91_PIN_PC1, 0);
+ 	/* SSC (for WM8731) */
+ 	at91_add_device_ssc(AT91SAM9260_ID_SSC, ATMEL_SSC_TX);
+ }
+ 
+-MACHINE_START(AT91SAM9G20EK, "Atmel AT91SAM9G20-EK")
++MACHINE_START(AT91SAM9G20EK, "AIZO digitalSTROM Server")
+ 	/* Maintainer: Atmel */
+ 	.phys_io	= AT91_BASE_SYS,
+ 	.io_pg_offst	= (AT91_VA_BASE_SYS >> 18) & 0xfffc,
+diff --git a/arch/arm/mach-at91/include/mach/board.h b/arch/arm/mach-at91/include/mach/board.h
+index 2f4fced..4e6a451 100644
+--- a/arch/arm/mach-at91/include/mach/board.h
++++ b/arch/arm/mach-at91/include/mach/board.h
+@@ -129,6 +129,7 @@ extern void __init at91_add_device_spi(struct spi_board_info *devices, int nr_de
+ #define ATMEL_UART_DTR	0x08
+ #define ATMEL_UART_DCD	0x10
+ #define ATMEL_UART_RI	0x20
++#define ATMEL_UART_RS485 0x40
+ 
+ extern void __init at91_register_uart(unsigned id, unsigned portnr, unsigned pins);
+ extern void __init at91_set_serial_console(unsigned portnr);
+@@ -144,6 +145,7 @@ extern void __init __deprecated at91_init_serial(struct at91_uart_config *config
+ struct atmel_uart_data {
+ 	short		use_dma_tx;	/* use transmit DMA? */
+ 	short		use_dma_rx;	/* use receive DMA? */
++	int		use_rs485;
+ 	void __iomem	*regs;		/* virtual base address, if any */
+ };
+ extern void __init at91_add_device_serial(void);
+diff --git a/drivers/mmc/core/mmc_ops.c b/drivers/mmc/core/mmc_ops.c
+index d2cb5c6..05e038f 100644
+--- a/drivers/mmc/core/mmc_ops.c
++++ b/drivers/mmc/core/mmc_ops.c
+@@ -460,4 +460,5 @@ int mmc_send_status(struct mmc_card *card, u32 *status)
+ 
+ 	return 0;
+ }
++EXPORT_SYMBOL(mmc_send_status);
+ 
+diff --git a/drivers/mmc/host/at91_mci.c b/drivers/mmc/host/at91_mci.c
+index 63924e0..d03212e 100644
+--- a/drivers/mmc/host/at91_mci.c
++++ b/drivers/mmc/host/at91_mci.c
+@@ -5,6 +5,9 @@
+  *
+  *  Copyright (C) 2006 Malcolm Noyes
+  *
++ *  Copyright (C) 2009 Fabian Godehardt, emlixGmbH
++ *  Added some code to auto detect the card without a card-detect pin.
++ *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 as
+  * published by the Free Software Foundation.
+@@ -64,9 +67,11 @@
+ #include <linux/err.h>
+ #include <linux/dma-mapping.h>
+ #include <linux/clk.h>
++#include <linux/kthread.h>
+ #include <linux/atmel_pdc.h>
+ 
+ #include <linux/mmc/host.h>
++#include <linux/mmc/core.h>
+ 
+ #include <asm/io.h>
+ #include <asm/irq.h>
+@@ -88,6 +93,9 @@
+ #define at91_mci_read(host, reg)	__raw_readl((host)->baseaddr + (reg))
+ #define at91_mci_write(host, reg, val)	__raw_writel((val), (host)->baseaddr + (reg))
+ 
++static struct task_struct *at91_cd_thread; /* thread for cyclical carddetect signal */
++
++extern int mmc_send_status(struct mmc_card *card, u32 *status);
+ 
+ /*
+  * Low level type for this driver
+@@ -971,6 +979,56 @@ static void at91_mci_enable_sdio_irq(struct mmc_host *mmc, int enable)
+ 
+ }
+ 
++static int at91_cd_thread_code(void *data)
++{
++	struct at91mci_host *host = data;
++	struct mmc_host *mmc = host->mmc;
++	int card_present = 0, err = 0;
++	unsigned long timeout;
++
++	for (;;) {
++		if (host->present != 1)
++			mmc_detect_change(host->mmc, 0);
++
++		if (mmc->card) {
++			mmc_claim_host(mmc);
++			err = mmc_send_status(mmc->card, NULL);
++			mmc_release_host(mmc);
++			if (err) {
++				/* no card inserted */
++				card_present = 0;
++			} else {
++				/* card inserted*/
++				card_present = 1;
++			}
++			if (card_present != host->present) {
++				if (host->present && !card_present)
++					mmc_detect_change(host->mmc, msecs_to_jiffies(1));
++				host->present = card_present;
++				pr_debug("%s: card %s\n", mmc_hostname(host->mmc),
++					card_present ? "inserted" : "removed");
++				if (!card_present) {
++					pr_debug("****** Resetting SD-card bus width ******\n");
++					at91_mci_write(host, AT91_MCI_SDCR, at91_mci_read(host, AT91_MCI_SDCR) & ~AT91_MCI_SDCBUS);
++				}
++			}
++		} /* else do nothing */
++
++		/* add thread again */
++		set_current_state(TASK_INTERRUPTIBLE);
++		timeout = HZ/2;
++		schedule_timeout_interruptible(timeout);
++		set_current_state(TASK_RUNNING);
++		if (kthread_should_stop()) {
++			pr_debug("at91_mci: card_detect thread got signal, break\n");
++			break;
++		}
++	}
++
++	return 0;
++}
++
++
+ static const struct mmc_host_ops at91_mci_ops = {
+ 	.request	= at91_mci_request,
+ 	.set_ios	= at91_mci_set_ios,
+@@ -1112,6 +1170,16 @@ static int __init at91_mci_probe(struct platform_device *pdev)
+ 			dev_warn(&pdev->dev, "request MMC detect irq failed\n");
+ 		else
+ 			device_init_wakeup(&pdev->dev, 1);
++	} else {
++		/* try to detect it manually */
++		at91_cd_thread = kthread_run(at91_cd_thread_code, host, "card_detect");
++		if (IS_ERR(at91_cd_thread)) {
++			ret = PTR_ERR(at91_cd_thread);
++			at91_cd_thread = NULL;
++			printk(DRIVER_NAME "Cannot create card_detect thread\n");
++			goto fail0;
++		}
++		printk(KERN_INFO DRIVER_NAME ": card_detect thread activated\n");
+ 	}
+ 
+ 	pr_debug("Added MCI driver\n");
+@@ -1159,6 +1227,8 @@ static int __exit at91_mci_remove(struct platform_device *pdev)
+ 			free_irq(gpio_to_irq(host->board->det_pin), host);
+ 		device_init_wakeup(&pdev->dev, 0);
+ 		gpio_free(host->board->det_pin);
++	} else {
++		kthread_stop(at91_cd_thread);
+ 	}
+ 
+ 	at91_mci_disable(host);
+diff --git a/drivers/serial/atmel_serial.c b/drivers/serial/atmel_serial.c
+index 9d948bc..c39551e 100644
+--- a/drivers/serial/atmel_serial.c
++++ b/drivers/serial/atmel_serial.c
+@@ -147,6 +147,8 @@ struct atmel_uart_port {
+ 	unsigned int		irq_status_prev;
+ 
+ 	struct circ_buf		rx_ring;
++
++	int			use_rs485;
+ };
+ 
+ static struct atmel_uart_port atmel_ports[ATMEL_MAX_UART];
+@@ -877,6 +879,15 @@ static int atmel_startup(struct uart_port *port)
+ 		}
+ 	}
+ 
++	/* ugly HACK for AIZO:
++	 * the RTS line does not stay low on startup, the TXempty bit
++	 * does not work correct. Therefore we need to set the GPIO
++	 * here. :(
++	 */
++	if (atmel_port->use_rs485)
++		at91_set_A_periph(AT91_PIN_PB28, 0);
++
++
+ 	/* Save current CSR for comparison in atmel_tasklet_func() */
+ 	atmel_port->irq_status_prev = UART_GET_CSR(port);
+ 	atmel_port->irq_status = atmel_port->irq_status_prev;
+@@ -1021,7 +1032,8 @@ static void atmel_set_termios(struct uart_port *port, struct ktermios *termios,
+ 	/* Get current mode register */
+ 	mode = UART_GET_MR(port) & ~(ATMEL_US_USCLKS | ATMEL_US_CHRL
+ 					| ATMEL_US_NBSTOP | ATMEL_US_PAR
+-					| ATMEL_US_USMODE);
++					/* | ATMEL_US_USMODE */ /* disabled for rs485 */
++					);
+ 
+ 	baud = uart_get_baud_rate(port, termios, old, 0, port->uartclk / 16);
+ 	quot = uart_get_divisor(port, baud);
+@@ -1067,10 +1079,12 @@ static void atmel_set_termios(struct uart_port *port, struct ktermios *termios,
+ 		mode |= ATMEL_US_PAR_NONE;
+ 
+ 	/* hardware handshake (RTS/CTS) */
++	/* disabled for rs485
+ 	if (termios->c_cflag & CRTSCTS)
+ 		mode |= ATMEL_US_USMODE_HWHS;
+ 	else
+ 		mode |= ATMEL_US_USMODE_NORMAL;
++	*/
+ 
+ 	spin_lock_irqsave(&port->lock, flags);
+ 
+@@ -1279,6 +1293,11 @@ static void __devinit atmel_init_port(struct atmel_uart_port *atmel_port,
+ 	atmel_port->use_dma_tx = data->use_dma_tx;
+ 	if (atmel_use_dma_tx(port))
+ 		port->fifosize = PDC_BUFFER_SIZE;
++
++	if (data->use_rs485)
++		atmel_port->use_rs485 = 1;
++	else
++		atmel_port->use_rs485 = 0;
+ }
+ 
+ /*
+@@ -1565,6 +1584,18 @@ static int __devinit atmel_serial_probe(struct platform_device *pdev)
+ 	device_init_wakeup(&pdev->dev, 1);
+ 	platform_set_drvdata(pdev, port);
+ 
++	if (port->use_rs485) {
++		printk("enable RS485 on port %d...", pdev->id);
++		ret = UART_GET_MR(&port->uart);
++		UART_PUT_MR(&port->uart, (UART_GET_MR(&port->uart) & ~ATMEL_US_USMODE) | ATMEL_US_USMODE_RS485);
++		printk("done\n");
++		UART_PUT_CR(&port->uart, ATMEL_US_TXDIS | ATMEL_US_RXDIS);
++		/* enable the serial port */
++		UART_PUT_CR(&port->uart, ATMEL_US_RSTSTA | ATMEL_US_RSTRX);
++		/* enable xmit & rcvr */
++		UART_PUT_CR(&port->uart, ATMEL_US_TXEN | ATMEL_US_RXEN | ATMEL_US_RTSEN);
++	}
++
+ 	return 0;
+ 
+ err_add_port:
+-- 
+1.7.1
+

@@ -1,0 +1,22 @@
+#!/bin/sh
+
+PATH=/usr/bin:/bin:/usr/sbin:/sbin
+export PATH
+
+dev="$1"
+action="$2"
+
+case "$action" in
+in)
+    dss11-ledd-client net_ok
+    ;;
+out)
+    dss11-ledd-client net_err
+    ;;
+probe)
+    ;;
+*)
+    echo "I have been called with a funny action of '%s'!" 1>&2
+    exit 1
+    ;;
+esac

@@ -1,0 +1,16 @@
+--- js-1.8.5/js/src/configure	2011-03-31 21:08:36.000000000 +0200
++++ js-1.8.5/js/src/configure.new	2013-04-07 11:50:48.000000000 +0200
+@@ -13326,9 +13326,9 @@
+ #define MOZ_ARM_ARCH 1
+ EOF
+ 
+-        CFLAGS="$CFLAGS -march=armv7-a -marm -mfloat-abi=softfp $MOZ_ARM_VFP_FLAGS"
+-        CXXFLAGS="$CXXFLAGS -march=armv7-a -marm -mfloat-abi=softfp $MOZ_ARM_VFP_FLAGS"
+-        ASFLAGS="$ASFLAGS -march=armv7-a -marm -mfloat-abi=softfp $MOZ_ARM_VFP_FLAGS"
++        CFLAGS="$CFLAGS -march=armv7-a -marm $MOZ_ARM_VFP_FLAGS"
++        CXXFLAGS="$CXXFLAGS -march=armv7-a -marm $MOZ_ARM_VFP_FLAGS"
++        ASFLAGS="$ASFLAGS -march=armv7-a -marm $MOZ_ARM_VFP_FLAGS"
+       else
+         { echo "configure: error: --with-cpu-arch=armv7 is not supported for non-GNU toolchains" 1>&2; exit 1; }
+       fi
+

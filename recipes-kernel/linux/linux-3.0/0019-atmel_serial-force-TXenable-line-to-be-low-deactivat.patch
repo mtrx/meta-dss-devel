@@ -1,0 +1,54 @@
+From 78078e1d64749debd44eb963072e4a1ea33cf00d Mon Sep 17 00:00:00 2001
+From: Christian Hitz <christian.hitz@aizo.com>
+Date: Mon, 12 Mar 2012 10:24:06 +0100
+Subject: [PATCH] atmel_serial: force TXenable line to be low (deactivated) on
+ boot
+
+---
+ arch/arm/mach-at91/at91sam9260_devices.c |    9 +++++++--
+ drivers/tty/serial/atmel_serial.c        |    8 ++++++++
+ 2 files changed, 15 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/mach-at91/at91sam9260_devices.c b/arch/arm/mach-at91/at91sam9260_devices.c
+index a02c53c..93abdfe 100644
+--- a/arch/arm/mach-at91/at91sam9260_devices.c
++++ b/arch/arm/mach-at91/at91sam9260_devices.c
+@@ -960,9 +960,14 @@ static inline void configure_usart1_pins(unsigned pins)
+ {
+ 	at91_set_A_periph(AT91_PIN_PB6, 1);		/* TXD1 */
+ 	at91_set_A_periph(AT91_PIN_PB7, 0);		/* RXD1 */
+-
++	/* ugly Hack for AIZO:
++	 * the RTS pin will not stay low in RS485 mode, so we need to set
++	 * this in in drivers/serial/atmel_serial.c during the open of the
++	 * device. :(
++	 */
++	/*
+ 	if (pins & ATMEL_UART_RTS)
+-		at91_set_A_periph(AT91_PIN_PB28, 0);	/* RTS1 */
++		at91_set_A_periph(AT91_PIN_PB28, 0); */	/* RTS1 */
+ 	if (pins & ATMEL_UART_CTS)
+ 		at91_set_A_periph(AT91_PIN_PB29, 0);	/* CTS1 */
+ }
+diff --git a/drivers/tty/serial/atmel_serial.c b/drivers/tty/serial/atmel_serial.c
+index e3874ca..cd24da1 100644
+--- a/drivers/tty/serial/atmel_serial.c
++++ b/drivers/tty/serial/atmel_serial.c
+@@ -962,6 +962,14 @@ static int atmel_startup(struct uart_port *port)
+ 		}
+ 	}
+ 
++	/* ugly HACK for AIZO:
++	 * the RTS line does not stay low on startup, the TXempty bit
++	 * does not work correct. Therefore we need to set the GPIO
++	 * here. :(
++	 */
++	if (atmel_port->rs485.flags & SER_RS485_ENABLED)
++		at91_set_A_periph(AT91_PIN_PB28, 0);
++
+ 	/* Save current CSR for comparison in atmel_tasklet_func() */
+ 	atmel_port->irq_status_prev = UART_GET_CSR(port);
+ 	atmel_port->irq_status = atmel_port->irq_status_prev;
+-- 
+1.7.5.4
+

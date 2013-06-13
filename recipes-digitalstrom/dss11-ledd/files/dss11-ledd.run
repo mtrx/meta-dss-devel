@@ -1,0 +1,10 @@
+#!/bin/sh
+
+LOGDIR=/var/log/
+
+mkdir -p $LOGDIR
+chmod a+rx $LOGDIR
+
+APP=/usr/bin/dss11-ledd
+exec 2>&1
+$APP $OPTIONS

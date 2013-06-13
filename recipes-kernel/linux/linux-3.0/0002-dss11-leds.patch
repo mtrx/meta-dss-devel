@@ -1,0 +1,45 @@
+From 8c5a73d0830ffa69cbdb0c83183af0622fc57907 Mon Sep 17 00:00:00 2001
+From: Johannes Winkelmann <johannes.winkelmann@aizo.com>
+Date: Tue, 26 Jul 2011 16:27:02 +0200
+Subject: [PATCH 02/17] dss11 leds
+
+---
+ arch/arm/mach-at91/board-sam9g20ek.c |   20 ++++++++++++--------
+ 1 files changed, 12 insertions(+), 8 deletions(-)
+
+diff --git a/arch/arm/mach-at91/board-sam9g20ek.c b/arch/arm/mach-at91/board-sam9g20ek.c
+index 0268a12..0317a1a 100644
+--- a/arch/arm/mach-at91/board-sam9g20ek.c
++++ b/arch/arm/mach-at91/board-sam9g20ek.c
+@@ -249,16 +249,20 @@ static void __init ek_add_device_mmc(void)
+  * LEDs
+  */
+ static struct gpio_led ek_leds[] = {
+-	{	/* "bottom" led, green, userled1 to be defined */
+-		.name			= "ds5",
+-		.gpio			= AT91_PIN_PA6,
+-		.active_low		= 1,
++	{	/* blue */
++		.name			= "blue",
++		.gpio			= AT91_PIN_PB3,
+ 		.default_trigger	= "none",
+ 	},
+-	{	/* "power" led, yellow */
+-		.name			= "ds1",
+-		.gpio			= AT91_PIN_PA9,
+-		.default_trigger	= "heartbeat",
++	{	/* green */
++		.name			= "green",
++		.gpio			= AT91_PIN_PB0,
++ 		.default_trigger	= "default-on",
++ 	},
++	{	/* red */
++		.name			= "red",
++		.gpio			= AT91_PIN_PB1,
++		.default_trigger	= "default-on",
+ 	}
+ };
+ 
+-- 
+1.7.4.1
+

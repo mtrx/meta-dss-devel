@@ -1,0 +1,10 @@
+--- linux-2.6.32.vanilla/drivers/rtc/rtc-rs5c372.c	2009-12-03 04:51:21.000000000 +0100
++++ linux-2.6.32/drivers/rtc/rtc-rs5c372.c	2012-01-14 12:57:16.000000000 +0100
+@@ -223,6 +223,7 @@
+ 	buf[4] = bin2bcd(tm->tm_mday);
+ 	buf[5] = bin2bcd(tm->tm_mon + 1);
+ 	buf[6] = bin2bcd(tm->tm_year - 100);
++	buf[7] = 0x00;
+ 
+ 	if (i2c_smbus_write_i2c_block_data(client, addr, sizeof(buf), buf) < 0) {
+ 		dev_err(&client->dev, "%s: write error\n", __func__);

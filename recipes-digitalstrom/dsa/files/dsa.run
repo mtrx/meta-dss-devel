@@ -1,0 +1,55 @@
+#!/bin/sh
+
+DBDIR=/var/lib/dsa
+LOGDIR=/var/log/dsa
+RESTARTLOG="$LOGDIR/dsa-start-stop.log"
+
+mkdir -p $LOGDIR $DBDIR
+chmod a+rx $LOGDIR
+
+APP=/usr/bin/dsa
+OPTIONS="-c /etc/dsa/dsa.cfg"
+
+DSS11_LOCALE=
+if [[ -f /etc/default/locale ]]; then
+    . /etc/default/locale
+else
+    DSS11_LOCALE="de_DE"
+fi
+
+while [ ! -x $APP ]; do
+    echo "$0: $APP not found"
+    sleep 10;
+done
+
+echo "####################################" >> $RESTARTLOG
+date >> $RESTARTLOG
+echo "Starting dSA" >> $RESTARTLOG
+
+CARD_FOUND=0
+
+exec 2>&1
+LC_MESSAGES="$DSS11_LOCALE" LC_CTYPE="$DSS11_LOCALE" LC_TIME="$DSS11_LOCALE" $APP $OPTIONS
+if [[ $? -eq 2 ]]; then
+    if [[ -e "/var/lib/dsa/dsa.db" ]]; then
+        for line in `mount -t ext4`; do
+            if [[ "`echo $line | cut -f 3`" == "/media/card" ]]; then
+                CARD_FOUND=1
+                break
+            fi
+        done
+    fi
+
+    if [[ $CARD_FOUND -eq 1 ]]; then
+        mkdir -p /media/card/backup/dsa
+        cp /var/lib/dsa/dsa.db /media/card/backup/dsa/dsa.db.corrupt
+        rm -f /var/lib/dsa/dsa.db
+    else
+        rm -f /var/lib/dsa/dsa.db
+    fi
+fi
+
+echo "Stopped dSA, RC=$?" >> $RESTARTLOG
+date >> $RESTARTLOG
+echo "####################################" >> $RESTARTLOG
+

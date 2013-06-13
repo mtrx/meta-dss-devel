@@ -1,0 +1,13 @@
+#!/bin/sh
+
+DSSPID=`pidof dss`
+if [ $? -eq 0 -a -n $DSSPID ]; then
+  dss11-ledd-client ready
+fi
+
+LEDPID=`pidof dss11-ledd`
+if [ $? -eq 0 -a -n $LEDPID ]; then
+  exit 0
+fi
+
+exit 1

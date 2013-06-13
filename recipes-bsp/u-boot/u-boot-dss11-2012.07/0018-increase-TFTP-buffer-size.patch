@@ -1,0 +1,26 @@
+From e36f36035e36be5f077abed1567bbc2866e14ac2 Mon Sep 17 00:00:00 2001
+From: Christian Hitz <christian.hitz@aizo.com>
+Date: Fri, 17 Aug 2012 10:09:45 +0200
+Subject: [PATCH 18/20] increase TFTP buffer size
+
+buffer was too small for our NAND page size
+---
+ net/tftp.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/net/tftp.c b/net/tftp.c
+index 74d1fa0..d24ff92 100644
+--- a/net/tftp.c
++++ b/net/tftp.c
+@@ -208,7 +208,7 @@ static int tftp_nand_write(nand_info_t *meminfo, uchar *src, unsigned long *offs
+ 
+ static void tftp_2_nand(uchar * src, unsigned len)
+ {
+-	#define TFTP2NAND_BUFFER_SIZE 4096
++	#define TFTP2NAND_BUFFER_SIZE 2*4096
+ 	static int temp_buf_offset;
+ 	static unsigned long nand_offset;
+ 	static u_char temp_buf[TFTP2NAND_BUFFER_SIZE];
+-- 
+1.7.9.5
+

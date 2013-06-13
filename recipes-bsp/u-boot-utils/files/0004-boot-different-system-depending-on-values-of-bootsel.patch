@@ -1,0 +1,60 @@
+From 9472d4a6342723252d8d4bf5aa965d23e331d03c Mon Sep 17 00:00:00 2001
+From: Johannes Winkelmann <johannes.winkelmann@aizo.com>
+Date: Tue, 29 Jun 2010 17:50:57 +0200
+Subject: [PATCH 4/4] boot different system depending on values of 'bootsel'
+
+---
+ include/configs/digitalSTROM.h |   28 +++++++++++++++++++++++-----
+ 1 files changed, 23 insertions(+), 5 deletions(-)
+
+diff --git a/include/configs/digitalSTROM.h b/include/configs/digitalSTROM.h
+index dc897eb..ece90de 100644
+--- a/include/configs/digitalSTROM.h
++++ b/include/configs/digitalSTROM.h
+@@ -251,20 +251,38 @@
+ #define CONFIG_ENV_OFFSET		0x60000
+ #define CONFIG_ENV_OFFSET_REDUND	0x80000
+ #define CONFIG_ENV_SIZE		0x20000		/* 1 sector = 128 kB */
+-//#define CONFIG_BOOTCOMMAND	"nand read 0x22000000 0xA0000 0x200000; bootm"
+-#define CONFIG_BOOTCOMMAND	"nboot 0x22000000 0 0x2A0000;bootm 0x22000000"
++#define CONFIG_BOOTCOMMAND	"run boot_system"
+ #define CONFIG_BOOTARGS		"console=ttyS0,115200 "			\
+ 				"root=/dev/mtdblock6 "			\
+ 				"rw rootfstype=jffs2 "			\
+ 				MTDPARTS_DEFAULT
+ 
++/*
++ * Note on the select_setup / setup_sys* vars:
++ *
++ * it appears that it's not possible to detect a non-set variable, and
++ * test '$unset_var' = "somestring" is always true; therefore, we have
++ * to apply some indirection to this. The concept looks like this:
++ *
++ * the bootcommand is boot_system, which calls select_setup at first;
++ * the later will call a function which appends the value of the 'bootsel'
++ * variable to the end:
++ *  bootsel empty -> setup_sys is called
++ *  bootsel = 'prod' -> setup_sys is called
++ *  bootsel = 'rescue' -> setup_sys is called
++ *  bootsel = (something else) -> setup_sys(somethingelse) is called and 
++ *                                will fail, setup_sys is called afterwards
++ *
++ */
+ #define CONFIG_EXTRA_ENV_SETTINGS \
+ 				"kernel_addr=0x2A0000\0" \
+ 				"rootfs_part=6\0" \
+-                                "select_rescue=setenv kernel_addr 0xA0000;setenv rootfs_part 5\0" \
++                                "setup_sysrescue=echo \"Selecting rescue/update system\";setenv kernel_addr 0xA0000;setenv rootfs_part 5\0" \
++                                "setup_sysprod=echo \"Selecting production system\";setenv kernel_addr 0x2A0000;setenv rootfs_part 6\0" \
++                                "setup_sys=run setup_sysrescue\0" \
++                                "select_setup=run setup_sys\$bootsel || run setup_sysrescue\0" \
+ 				"setargs=setenv bootargs console=ttyS0,115200 root=/dev/mtdblock\$rootfs_part rw rootfstype=jffs2 " MTDPARTS_DEFAULT "\0" \
+-                                "boot_system=if test ! $bootsel = \"prod\"; then echo \"Booting rescue/update system\";" \
+-                                "run select_rescue; fi;run setargs;nboot 0x22000000 0 \$kernel_addr;bootm 0x22000000\0" \
++                                "boot_system=run select_setup;run setargs;nboot 0x22000000 0 \$kernel_addr;bootm 0x22000000\0" \
+ 				"mtdids=" MTDIDS_DEFAULT "\0" \
+                                 "mtdparts=" MTDPARTS_DEFAULT "\0" \
+ 				"partition=nand0,6\0" \
+-- 
+1.7.0.4
+

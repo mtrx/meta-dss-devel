@@ -1,0 +1,128 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title></title>
+    <meta content="text/html; charset=utf-8" http-equiv="Content-Type" />
+  </head>
+  <body>
+  <div class="x-text-margin x-black-text">
+    <h2>Software Release Notes</h2>
+    <h3>dSS V1.6.0</h3>
+    <p style="color:black;">
+      The Software Release Notes (SRN) describe software changes to existing Aizo products which can be updated by the customer .
+    </p>
+    <div class="x-text-margin">
+        <b>Document Number:</b> SRN-2012-07<br/>
+        <b>Version:</b> v1.0<br/>
+    </div>
+    <h3>Affected Products</h3>
+    <div class="x-text-margin">
+      <span class="x-green-text">
+        <b>Product: digitalSTROM-Server dSS11</b>
+      </span>
+      <ul style="list-style-type:none;margin-left:20px;margin-right:20px">
+        <li style="padding-bottom:2px;padding-top:5px;">
+          <b>Software Description:</b> dSS Version
+        </li>
+        <li style="padding-bottom:2px;">
+          <b>Latest Version:</b> 1.6.0
+        </li>
+      </ul>
+      <br/>
+      <span class="x-green-text">
+        <b>Product: digitalSTROM-Meter dSM11</b>
+      </span>
+      <ul style="list-style-type:none;margin-left:20px;margin-right:20px">
+        <li style="padding-bottom:2px;padding-top:5px;">
+          <b>Software Description:</b> ARM Software Version
+        </li>
+        <li style="padding-bottom:2px;">
+          <b>Latest Version:</b> 1.11.0.0
+        </li>
+        <li style="padding-bottom:2px;">
+          <b>Software Description:</b> DSP Software Version
+        </li>
+        <li style="padding-bottom:2px;">
+          <b>Latest Version:</b> 1.2.2.0
+        </li>
+      </ul>
+    </div>
+    <h3>Installation Notes</h3>
+    <ul style="list-style-type:disc;margin-left:20px;margin-right:20px">
+      <li style="padding-bottom:5px">
+	    A software update needs to be executed in the digitalSTROM configurator within <i>‘System / System Update’</i> menu. 
+		<br/>
+		The dSS11 must be connected to the internet in order to perform the update. Alternatively, the update can be installed using an USB thumb drive.
+      </li>
+      <li style="padding-bottom:5px">
+          It is recommended to back up your system settings prior to performing a system update under <i>‘System / System Maintenance’</i>.
+      </li>
+      <li style="padding-bottom:5px">
+          After having installed the system updates the system automatically checks for available dSM firmware updates, which must be installed manually. Install these updates by clicking on the <i>‘dSM firmware install’</i> button. After the installation, check for further updates to ensure that all dSM's were updated.
+      </li>
+      <li style="padding-bottom:5px">
+          When updating from version 1.2.1 or older dSS please also note information on earlier updates.&nbsp;  A complete list of release notes as well as the USB update file can be found at <span class="x-text-link"><a href="http://www.aizo.com/de/Softwareupdates.php" target="_blank">http://www.aizo.com/de/Softwareupdates.php</a></span>.
+      </li>
+    </ul>
+	
+    <h3>New Features</h3>
+    <p class="x-green-text">
+      <b>Conditional execution of actions within Server-Apps</b>
+    </p>
+    <p style="color:black;">
+	  The execution of actions defined in the  Server-Apps ‘Presence Simulation’, ‘Timers’, ‘Event Responder’ and ‘Event Mailer’ can be restricted by conditions.
+	  <br/>
+	  Available conditions include solar altitude (day, night, bright, dark), daytime, weekday, presence,  presence simulation state and room state.
+    </p>
+    <p class="x-green-text">
+      <b>Support of Turkish language </b>
+    </p>
+    <p style="color:black;">
+		The digitalSTROM configurator as well as most of the server apps are available in Turkish. Language settings can be changed in the status bar at the bottom right corner of the user interface. All server apps are automatically displayed in the language selected within the configurator.  
+    </p>
+    <p class="x-green-text">
+      <b>Installation of Server-Apps by USB thumb drive</b>
+    </p>
+    <p style="color:black;">
+		The software of both the digitalSTROM server and the server apps can be updated using a USB thumb drive already. 
+		<br>
+		As a new feature, additional server apps can be installed without internet connection by using a USB thumb drive as well. 
+    </p>
+    
+	
+    <h3>Improvements</h3>
+    <ul style="list-style-type:disc;margin-left:20px;margin-right:20px">
+      <li style="padding-bottom:5px">
+		When updating the system from R1.6.0 to future versions, the dSM firmware update will be executed automatically when installing a system update. Thereby, the progress information within the update dialog has been improved.
+      </li>
+      <li style="padding-bottom:5px">
+		Server-Apps ‘Bidgley Meter’ and ’Eragy Meter’ are available in English.
+      </li>
+      <li style="padding-bottom:5px">
+		The function ‘Refresh view’ keeps the currently selected element within the room or meter tab.
+      </li>
+      <li style="padding-bottom:5px">
+		The function ‘Add device to area’ and ‘Remove device from area’ performed a wrong configuration that might have caused the devices GR-KL2x0 to stop unnecessarily when stopping another area. To fix this behavior, devices need to be added or removed to all the areas again.
+      </li>
+      <li style="padding-bottom:5px">
+		The rare issue of a red blinking dSM-LED or a wrongly displayed DSP Software Version is solved.
+      </li>
+      <li style="padding-bottom:5px">
+		The system time shown in ‘System/System settings’ displayed the local time of the browser rather than the internal system time. The time now corresponds with the local time of the dSS.
+      </li>
+      <li style="padding-bottom:5px">
+		The name of the digitalSTROM Server will be published within the network and shown on the smartphone app without preliminary modification. 
+	  </li>
+
+	  </ul>
+	
+	
+    <h3>Documentation</h3>
+    <p style="color:black;">
+      For more information about the new features and their operation, refer to the current digital manual under "Introduction, Operation, Configuration" and "Installation".
+      <br/>
+      The latest version of the manual can be downloaded in PDF format from <span class="x-text-link"><a href="http://www.aizo.com/de/support/Bedienungsanleitung_D.php" target="_blank">http://www.aizo.com/de/support/Bedienungsanleitung_D.php</a></span>.
+  </p>
+  </div>
+  </body>
+</html>

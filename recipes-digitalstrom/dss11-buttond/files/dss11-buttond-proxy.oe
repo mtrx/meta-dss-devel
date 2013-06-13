@@ -1,0 +1,58 @@
+#!/bin/sh
+#
+# script to handle events from dss11-buttond
+# arguments are:
+#   $1: command, one of "reboot", "reset, "about_to_reboot", "about_to_reset", "external"
+#   $2: duration of the button press
+
+PROXY_DIR=/etc/dss11-buttond-proxy.d/
+
+case $1 in
+    "reboot")
+        sv stop dss # stop the dss, as it will otherwise mess up the LEDs
+        echo 0 > /sys/class/leds/blue/brightness
+        echo 1 > /sys/class/leds/green/brightness
+        echo 1 > /sys/class/leds/red/brightness
+
+        echo timer > /sys/class/leds/red/trigger
+        echo timer > /sys/class/leds/green/trigger
+
+        echo 1000 > /sys/class/leds/red/delay_on 
+        echo 1000 > /sys/class/leds/green/delay_on
+
+        echo 100 > /sys/class/leds/red/delay_off 
+        echo 100 > /sys/class/leds/green/delay_off
+        /sbin/reboot
+        ;;
+    "about_to_reboot")
+        echo none > /sys/class/leds/blue/trigger
+        echo 1 > /sys/class/leds/blue/brightness
+        echo 0 > /sys/class/leds/red/brightness
+        echo 0 > /sys/class/leds/green/brightness
+        ;;
+
+    "reset")
+        /usr/sbin/dss11-factory-reset
+        ;;
+    "about_to_reset")
+        echo 1 > /sys/class/leds/blue/brightness
+        echo 0 > /sys/class/leds/red/brightness
+        echo 0 > /sys/class/leds/green/brightness
+
+        echo timer > /sys/class/leds/blue/trigger
+        echo 100 > /sys/class/leds/blue/delay_on
+        echo 100 > /sys/class/leds/blue/delay_off
+        ;;
+
+    "external")
+        # run scripts in $PROXY_DIR
+	if [ -d "$PROXY_DIR" ]; then
+	    files=$(ls -1 $PROXY_DIR)
+	    for f in $files; do
+		if [ -x $PROXY_DIR/$f ]; then
+		    $PROXY_DIR/$f $2
+		fi
+	    done
+	fi
+        ;;
+esac

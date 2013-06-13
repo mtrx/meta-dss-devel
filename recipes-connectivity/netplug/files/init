@@ -1,0 +1,35 @@
+#! /bin/sh 
+#
+# This is an init script for openembedded
+# Copy it to /etc/init.d/netplugd and type
+# > update-rc.d ntpclient defaults 60
+#
+netplugd=/usr/bin/netplugd
+test -x "$netplugd" || exit 0
+
+case "$1" in
+  start)
+    echo -n "Starting netplugd"
+    start-stop-daemon --start --quiet --background --make-pidfile \
+	--pidfile /var/run/netplugd.pid --exec $netplugd
+    echo "."
+    ;;
+  stop)
+    echo -n "Stopping netplugd"
+    start-stop-daemon --stop --quiet --pidfile /var/run/netplugd.pid
+    echo "."
+    ;;
+  reload|force-reload)
+    start-stop-daemon --stop --quiet --signal 1 --exec $netplugd
+    ;;
+  restart)
+    $0 stop
+    sleep 1
+    $0 start
+    ;;
+  *)
+    echo "Usage: /etc/init.d/netplugd {start|stop|reload|restart|force-reload}"
+    exit 1
+esac
+
+exit 0

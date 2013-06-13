@@ -1,0 +1,11 @@
+--- runit-2.1.1/src/sv.c	2009-10-04 22:44:02.000000000 +0200
++++ runit-2.1.1/src/sv.c.patched	2010-09-27 19:49:30.000000000 +0200
+@@ -32,7 +32,7 @@
+ char *progname;
+ char *action;
+ char *acts;
+-char *varservice ="/service/";
++char *varservice ="/etc/runit/";
+ char **service;
+ char **servicex;
+ unsigned int services;

@@ -1,0 +1,8 @@
+#!/bin/sh
+
+mkdir -p /var/run/stunnel
+mkdir -p /var/log/stunnel
+
+exec 2>&1
+exec /usr/sbin/stunnel
+

@@ -1,0 +1,77 @@
+From 6cdebc0d829e950985951cf69a6905d815fbd178 Mon Sep 17 00:00:00 2001
+From: Johannes Winkelmann <johannes.winkelmann@aizo.com>
+Date: Tue, 29 Jun 2010 14:09:57 +0200
+Subject: [PATCH 03/16] implement rescue-image handling for dss11
+
+---
+ include/configs/digitalSTROM.h |   39 ++++++++++++++-------------------------
+ 1 files changed, 14 insertions(+), 25 deletions(-)
+
+diff --git a/include/configs/digitalSTROM.h b/include/configs/digitalSTROM.h
+index b0f8ffe..d068da9 100644
+--- a/include/configs/digitalSTROM.h
++++ b/include/configs/digitalSTROM.h
+@@ -127,8 +127,8 @@
+ #define CONFIG_SYS_MEMTEST_SCRATCH	0x23fffff4
+ #define CONFIG_CMDLINE_EDITING	1
+ #define CONFIG_CRC32_VERIFY	1
+-#define CFG_HUSH_PARSER		1
+-#define CFG_PROMPT_HUSH_PS2	"> "
++#define CONFIG_SYS_HUSH_PARSER		1
++#define CONFIG_SYS_PROMPT_HUSH_PS2	"> "
+ #define CONFIG_ROOT_RDONLY	1
+ #define CONFIG_MX_CYCLIC	1
+ #define CONFIG_AUTO_COMPLETE	1
+@@ -201,7 +201,7 @@
+ #define MTDIDS_DEFAULT		"nand0=atmel_nand"
+ #define MTDPARTS_DEFAULT	"mtdparts=atmel_nand:"	\
+ 					"128k(bootstrap),"			\
+-					"256k(uboot),"			\
++					"256k(uboot)ro,"			\
+ 					"256k(uboot-env),"			\
+ 					"2M(kernel-rescue),"			\
+ 					"2M(kernel-prod),"			\
+@@ -277,29 +277,18 @@
+ #define CONFIG_BOOTCOMMAND	"nboot 0x22000000 0 0x2A0000;bootm 0x22000000"
+ #define CONFIG_BOOTARGS		"console=ttyS0,115200 "			\
+ 				"root=/dev/mtdblock6 "			\
+-				"mtdparts=atmel_nand:128k(bootstrap)ro,"	\
+-				"256k(uboot)ro,256k(uboot-env)ro,"		\
+-				"2M(kernel-rescue),"		\
+-				"2M(kernel-prod),"		\
+-				"32M(rootfs-rescue),"		\
+-				"200M(rootfs-prod),"		\
+-				"-(config) "			\
+-				"rw rootfstype=jffs2"
++				"rw rootfstype=jffs2 "			\
++				MTDPARTS_DEFAULT
++
+ #define CONFIG_EXTRA_ENV_SETTINGS \
+-				"update.bootstrap=echo Update Bootstrap;mw.l 0x20000000 0xffffffff 0x8000;tftpboot 0x20000000 aizo.nand;nand erase 0x0 0x20000;nand write 0x20000000 0x0 0x20000\0" \
+-				"update.uboot=echo Update u-boot;mw.l 0x20000000 0xffffffff 0x10000;tftpboot 0x20000000 aizo.uboot;nand erase 0x20000 0x40000;nand write 0x20000000 0x20000 0x40000\0" \
+-				"update.kernel=echo Update linux;mw.l 0x20000000 0xffffffff 0x58000;tftpboot 0x20000000 aizo.kernel;nand erase 0xa0000 0x200000;nand write.jffs2 0x20000000 0xa0000 0x200000\0" \
+-				"update.targetfs=echo Update targetfs;tftpboot 0x20000000 aizo.targetfs;nand erase 0x2a0000;nand write.jffs2 0x20000000 0x2a0000 $(filesize)\0" \
+-				"mtdids=nand0=atmel_nand\0" \
+-                                "mtdparts=mtdparts=atmel_nand:"                  \
+-					"128k(bootstrap),"			\
+-					"256k(uboot),"			\
+-					"256k(uboot-env),"			\
+-					"2M(kernel-rescue),"			\
+-					"2M(kernel-prod),"			\
+-					"32M(rootfs-rescue),"			\
+-					"200M(rootfs-prod),"			\
+-					"-(config)\0" \
++				"kernel_addr=0x2A0000\0" \
++				"rootfs_part=6\0" \
++                                "select_rescue=setenv kernel_addr 0xA0000;setenv rootfs_part 5\0" \
++				"setargs=setenv bootargs console=ttyS0,115200 root=/dev/mtdblock\$rootfs_part rw rootfstype=jffs2 " MTDPARTS_DEFAULT "\0" \
++                                "boot_system=if test ! $bootsel = \"prod\"; then echo \"Booting rescue/update system\";" \
++                                "run select_rescue; fi;run setargs;nboot 0x22000000 0 \$kernel_addr;bootm 0x22000000\0" \
++				"mtdids=" MTDIDS_DEFAULT "\0" \
++                                "mtdparts=" MTDPARTS_DEFAULT "\0" \
+ 				"partition=nand0,6\0" \
+ 				"mtddevnum=6\0" \
+ 				"mtddevname=targetfs\0" \
+-- 
+1.7.4.1
+

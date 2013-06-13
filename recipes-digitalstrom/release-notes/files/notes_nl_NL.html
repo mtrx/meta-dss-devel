@@ -1,0 +1,126 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title></title>
+    <meta content="text/html; charset=utf-8" http-equiv="Content-Type" />
+  </head>
+  <body>
+  <div class="x-text-margin x-black-text">
+    <h2>Software Release Notes</h2>
+    <h3>dSS V1.6.0</h3>
+    <p style="color:black;">
+      Mit Software Release Notes (SRN) informiert aizo über Software-Änderungen bei bestehenden Produkten, welche vom Endkunden aktualisiert werden können.
+    </p>
+    <div class="x-text-margin">
+        <b>Dokument-Nummer:</b>&nbsp;SRN-2012-07<br/>
+        <b>Version:</b>v1.0<br/>
+    </div>
+    <h3>Betroffene Produkte</h3>
+    <div class="x-text-margin">
+      <span class="x-green-text">
+        <b>Produkt: digitalSTROM-Server dSS11</b>
+      </span>
+      <ul style="list-style-type:none;margin-left:20px;margin-right:20px">
+        <li style="padding-bottom:2px;padding-top:5px;">
+          <b>Software Bezeichnung:</b> dSS Version
+        </li>
+        <li style="padding-bottom:2px;">
+          <b>Neue Version:</b> 1.6.0
+        </li>
+      </ul>
+      <br/>
+      <span class="x-green-text">
+        <b>Produkt: digitalSTROM-Meter dSM11</b>
+      </span>
+      <ul style="list-style-type:none;margin-left:20px;margin-right:20px">
+        <li style="padding-bottom:2px;padding-top:5px;">
+          <b>Software Bezeichnung:</b> ARM Software Version
+        </li>
+        <li style="padding-bottom:2px;">
+          <b>Neue Version:</b> 1.11.0.0
+        </li>
+        <li style="padding-bottom:2px;">
+          <b>Software Bezeichnung:</b> DSP Software Version 
+        </li>
+        <li style="padding-bottom:2px;">
+          <b>Neue Version:</b> 1.2.2.0
+        </li>
+      </ul>
+    </div>
+    <h3>Hinweise zur Installation</h3>
+    <ul style="list-style-type:disc;margin-left:20px;margin-right:20px">
+      <li style="padding-bottom:5px">
+          Ein Software Update wird im digitalSTROM-Konfigurator unter <i>System / System Update</i> ausgeführt. Dazu muss der dSS11 über eine Internetverbindung verfügen.<br>
+		  Steht keine Internetverbindung zur Verfügung, kann das Update mittels USB Stick installiert werden.
+      </li>
+      <li style="padding-bottom:5px">
+          Es wird empfohlen, vor dem Update eine Sicherung der Systemeinstellungen vorzunehmen. Die Sicherung kann unter <i>System / System Wartung</i> durchgeführt werden.
+      </li>
+      <li style="padding-bottom:5px">
+          Nach der Installation des System Updates prüft das System automatisch auf vorhandene dSM Firmware Updates, welche manuell installiert werden müssen. Installieren Sie das Update über die Funktion <i>dSM Firmware installieren</i>. Suchen Sie nach der Installation nochmals nach Updates, damit die vollständige Installation auf allen dSM‘s überprüft wird.
+      </li>
+      <li style="padding-bottom:5px">
+        Bei einem Update von dSS Version 1.2.1 oder älter beachten Sie bitte auch die Hinweise zu den früheren Updates. Eine vollständige Liste aller Release Notes finden sie unter <span class="x-text-link"><a href="http://www.aizo.com/de/Softwareupdates.php" target="_blank">http://www.aizo.com/de/Softwareupdates.php</a></span>.
+      </li>
+    </ul>
+	
+	<h3>Neue Funktionen</h3>
+    <p class="x-green-text">
+      <b>Unterstützung von Bedingungen in Server-Apps</b>
+    </p>
+    <p style="color:black;">
+       In den Server-Apps ‚Anwesenheitssimulation‘, ‚Zeitschaltuhr‘, Scene-Responder‘ und ‚Benachrichtigungen‘ können neu auch Bedingungen definiert werden.<br>
+	   Damit kann die Ausführung der definierten Aktivitäten in den Apps präzisiert werden. Als Bedingungen stehen Sonnenstand (Tag, Nacht, Hell, Dunkel), Tageszeit, Wochentag, Anwesenheit, Status der Anwesenheitssimulation und Raumzustand zur Verfügung.
+    </p>
+    
+    <p class="x-green-text">
+      <b>Unterstützung der türkischen Sprache</b>
+    </p>
+    <p style="color:black;">
+      Der digitalSTROM Konfigurator wie auch die meisten Server-Apps stehen in türkischer Sprache zur Verfügung. Die Sprache kann im Konfigurator in der Statuszeile (unten rechts) umgestellt werden. Die Server-Apps übernehmen automatisch die im Konfigurator eingestellte Sprache. 
+    </p>
+    
+    <p class="x-green-text">
+      <b>Installation von Server-Apps via USB-Stick</b>
+    </p>
+    <p style="color:black;">
+      Die Software des digitalSTROM-Servers und der Server-Apps können mittels USB-Stick aktualisiert werden. Nun können auch noch nicht installierte Server-Apps per USB-Stick installiert werden. Auf diese Weise kann die Installation auch ohne Internetzugang erfolgen. 
+    </p>
+    
+
+	
+	
+    <h3>Verbesserungen</h3>
+    <ul style="list-style-type:disc;margin-left:20px;margin-right:20px">
+      <li style="padding-bottom:5px">
+	      Bei einem System Update von R1.6.0 auf zukünftige Versionen wird das dSM Firmware Update automatisch nach dem dSS Update ausgeführt. Die Statusmeldung wurde dabei verbessert, womit der Fortschritt während des Updates klarer ersichtlich ist.
+      </li>
+      <li style="padding-bottom:5px">
+	      Die Server-Apps ‚Bidgely Meter‘ und ‚Eragy Meter‘ stehen auch in englischer Sprache zur Verfügung.
+      </li>
+      <li style="padding-bottom:5px">
+	      Die Funktion ‚Ansicht aktualisieren‘ behält die aktuelle Selektierung des Raumes oder Meters bei.
+      </li>
+      <li style="padding-bottom:5px">
+	      Die Funktionen ‚Zum Bereich hinzufügen‘ und ‚Aus Bereich entfernen‘ setzten einen falschen Wert in den Klemmen GR-KL2x0, womit das Stoppen von Rollläden/Jalousien in einzelnen Bereichen jeweils auch ein Stop in den anderen Bereichen auslöste. Um dieses Verhalten zu korrigieren, müssen die Geräte nochmals zu den Bereichen hinzugefügt resp. entfernt werden.
+      </li>
+      <li style="padding-bottom:5px">
+	      Das in einzelnen Fällen auftretende rote Blinken des dSM bzw. die Anzeige einer nicht korrekten DSP Software tritt mit dem neuen Update nicht mehr auf. 
+      </li>
+      <li style="padding-bottom:5px">
+	      Unter ‚System / Systemeinstellungen‘ wurde die Lokalzeit des Browsers anstelle der Systemzeit angezeigt. Als aktuelle Uhrzeit wird nun die Lokalzeit des dSS angezeigt.
+      </li>
+      <li style="padding-bottom:5px">
+	      Mit dem neuen Update wird der Name des digitalSTROM Servers auch ohne vorgängige Änderung im Netzwerk publiziert und in den Smartphone Apps angezeigt.
+      </li>
+	</ul>	
+	
+    <h3>Dokumentation</h3>
+    <p style="color:black;">
+      Weitere Informationen zu allen Funktionen und deren Bedienung finden Sie im digitalSTROM-Handbuch unter “Einleitung, Bedienen, Einstellen” und “Installieren”.
+      <br/>
+      Die aktuelle Version des Handbuchs kann als PDF von <span class="x-text-link"><a href="http://www.aizo.com/de/support/Bedienungsanleitung_D.php" target="_blank">http://www.aizo.com/de/support/Bedienungsanleitung_D.php</a></span> heruntergeladen werden.
+    </p>
+  </div>
+  </body>
+</html>

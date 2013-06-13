@@ -1,0 +1,12 @@
+/var/log/ds485p/*log {
+    rotate 8
+    size 1M
+    missingok
+    notifempty
+    postrotate
+        PID_LOG=`cat /etc/runit/ds485p/log/supervise/pid`
+        if [ -n "$PID_LOG" ]; then
+           kill -HUP $PID_LOG > /dev/null 2>&1
+        fi
+    endscript
+}
